@@ -1,3 +1,4 @@
+require('dotenv').config();
 const db = require('./backend/db');
 const serverInit = require('./backend/server.js');
 const { initBot } = require('./backend/bot.js');

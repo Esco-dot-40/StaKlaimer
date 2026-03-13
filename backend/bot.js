@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { Telegraf, Markup } = require('telegraf');
 const db = require('./db');
 
@@ -9,6 +10,14 @@ if (!token) {
 const bot = token ? new Telegraf(token) : null;
 
 if (bot) {
+    // Debug Logger
+    bot.use(async (ctx, next) => {
+        if (ctx.from) {
+            console.log(`📩 [Bot] Incoming ${ctx.updateType} from ${ctx.from.username || ctx.from.id}: ${ctx.message?.text || '[No Text]'}`);
+        }
+        return next();
+    });
+
     // Bot starts immediately for the user
     bot.start(async (ctx) => {
         ctx.replyWithMarkdown(
@@ -52,6 +61,7 @@ const initBot = () => {
         });
         console.log('🤖 Telegram Bot (Telegraf) is running...');
     }
+    return bot;
 };
 
 module.exports = { initBot };
