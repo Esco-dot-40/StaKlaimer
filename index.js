@@ -1,12 +1,19 @@
 require('dotenv').config();
-const server = require('./backend/server.js');
+const serverInit = require('./backend/server.js');
 const bot = require('./backend/bot.js');
 
-// Start the Vanguard Backend
-// If server.js is written as a module, call its init
-if (typeof server === 'function') {
-    server();
+console.log('--- StaKlaimer SaaS Initializing ---');
+
+// Initialize the Vanguard Backend Server
+if (typeof serverInit === 'function') {
+    serverInit();
+} else {
+    console.error('❌ Failed to find server init function.');
 }
 
-console.log('🚀 StaKlaimer SaaS Engine Started');
-console.log('🔗 Backend & Bot are now online.');
+// Bot is initialized via its own require/launch sequence in bot.js
+
+console.log('🚀 StaKlaimer SaaS Engine Fully Processed');
+console.log('🌍 Public URL:', process.env.BASE_URL || 'Not Set');
+console.log('🐘 Database:', process.env.DATABASE_URL ? 'Postgres' : 'SQLite');
+console.log('------------------------------------');

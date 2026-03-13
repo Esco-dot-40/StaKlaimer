@@ -15,17 +15,12 @@ const PORT = process.env.PORT || 3000;
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 
 function init() {
-    // Initialize Telegram Bot
-    let bot;
-if (TELEGRAM_TOKEN) {
-    bot = new TelegramBot(TELEGRAM_TOKEN, { polling: true });
-    console.log('Telegram Bot initialized');
-}
-
 // In-memory store for connected clients (browser instances)
 const clients = new Map();
 
 app.use(express.json());
+app.get('/', (req, res) => res.send('StaKlaimer Vanguard Backend is Online.'));
+app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date() }));
 app.use(express.static('public'));
 
 // --- WebSocket Logic ---
@@ -89,12 +84,7 @@ app.post('/api/new-code', async (req, res) => {
         }
     });
 
-    // Notify via Telegram if bot is configured
-    if (bot) {
-        // Here you would normally send to specific user IDs stored in your database
-        // For simplicity, we'll log it
-        console.log(`Broadcasting to ${activeCount} browser clients via WS`);
-    }
+    console.log(`Broadcasting to ${activeCount} browser clients via WS`);
 
     res.json({ success: true, clientsNotified: activeCount });
 });
@@ -120,20 +110,6 @@ app.post('/api/payments/ipn-callback', async (req, res) => {
     }
     res.send('OK');
 });
-
-// --- Telegram Bot Commands ---
-if (bot) {
-    bot.onText(/\/start/, (msg) => {
-        const chatId = msg.chat.id;
-        bot.sendMessage(chatId, `Welcome to Stake Stealth Claimer!\n\nYour User ID: ${chatId}\nUse this ID in your Userscript settings to receive notifications.`);
-    });
-
-    bot.onText(/\/status/, (msg) => {
-        const chatId = msg.chat.id;
-        const isConnected = clients.has(chatId.toString());
-        bot.sendMessage(chatId, `Connection Status: ${isConnected ? '🟢 Connected' : '🔴 Disconnected'}`);
-    });
-}
 
     server.listen(PORT, () => {
         console.log(`Vanguard Backend running on http://localhost:${PORT}`);
