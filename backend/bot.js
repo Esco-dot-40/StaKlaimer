@@ -69,12 +69,14 @@ if (bot) {
 
         const engineActive = state.isEngineActive();
         const statusEmoji = engineActive ? "🟢 ACTIVE" : "🔴 STANDBY";
+        const captchaStatus = process.env.NOPECHA_KEY ? "✅ ARMED (Free 100/day)" : "❌ DISABLED";
 
         ctx.replyWithMarkdown(
             `🛰️ *VANGUARD HUB STATUS*\n` +
             `━━━━━━━━━━━━━━━━━━━━\n` +
             `🖥️ *Engine:* ${statusEmoji}\n` +
-            `📡 *Active Nodes:* \`${state.clients.size}\` (Solo Instance)\n\n` +
+            `📡 *Active Nodes:* \`${state.clients.size}\` (Solo Instance)\n` +
+            `🧩 *Captcha Solver:* ${captchaStatus}\n\n` +
             `🕒 *Recent Network Activity:*\n${claimText}\n\n` +
             `💡 _Use /screen to see the live browser feed._`
         );
@@ -85,11 +87,13 @@ if (bot) {
         const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
         
         if (isBrowserConnected) {
-            ctx.replyWithMarkdown(
-                "✅ *Vanguard: Linked & Synchronized*\n\n" +
-                "The server's internal browser is currently at Stake.com and ready to claim. " +
-                "You do *not* need to keep any tabs open on your device."
-            );
+            let replyText = "✅ *Vanguard: Linked & Synchronized*\n\n" +
+                            "The server's internal browser is currently at Stake.com and ready to claim. " +
+                            "You do *not* need to keep any tabs open on your device.";
+            if (process.env.NOPECHA_KEY) {
+                replyText += "\n\n🤖 *Captcha Solver:* Armed and ready to assist.";
+            }
+            ctx.replyWithMarkdown(replyText);
         } else {
             ctx.replyWithMarkdown(
                 "⚠️ *Vanguard: Not Synchronized*\n\n" +

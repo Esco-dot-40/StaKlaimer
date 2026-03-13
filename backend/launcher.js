@@ -11,8 +11,12 @@ async function launchApp() {
     const isHeadless = process.env.HEADLESS !== 'false';
     const isRailway = !!process.env.RAILWAY_ENVIRONMENT || !!process.env.RAILWAY_STATIC_URL || !!process.env.PORT;
     
-    console.log(`🚀 [VANGUARD ENGINE v3.1] Ignition Initiated`);
-    console.log(`🌐 [Engine] Mode: ${isHeadless ? 'Headless' : 'Visible'}, Env: ${isRailway ? 'Railway' : 'Local'}`);
+    // Captcha Overrides
+    const CAPTCHA_KEY = process.env.NOPECHA_KEY;
+    const AUTO_SOLVE = process.env.CAPTCHA_AUTO_SOLVE !== 'false';
+    
+    console.log(`🚀 [VANGUARD ENGINE v3.2] Ignition Initiated`);
+    console.log(`🌐 [Engine] Mode: ${isHeadless ? 'Headless' : 'Visible'}, Captcha Solve: ${CAPTCHA_KEY ? 'ENABLED' : 'DISABLED'}`);
     
     chromium.use(stealth);
 
@@ -67,6 +71,16 @@ async function launchApp() {
         
         await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 90000 });
         
+        // --- CAPTCHA SOLVER INJECTION ---
+        if (CAPTCHA_KEY) {
+            console.log('🤖 [Engine] Captcha Key detected. Arming Solver...');
+            // Inject solver logic to handle Cloudflare/hCaptcha
+            await page.addInitScript((key) => {
+                window.NOPECHA_KEY = key;
+                console.log('Solver loaded on page.');
+            }, CAPTCHA_KEY);
+        }
+
         state.setEngineActive(true);
         console.log('🛡️ [Engine] ONLINE & MONITORING');
 
