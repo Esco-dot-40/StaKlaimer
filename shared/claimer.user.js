@@ -95,6 +95,14 @@
         socket.onopen = () => {
             showSplash("SYNCHRONIZED WITH VANGUARD CLOUD");
             updateHUD('Cloud Linked', '#0ea5e9', true);
+            
+            // Aggressive Keep-Alive to prevent background throttling
+            setInterval(() => {
+                if (socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({ type: 'STATUS_UPDATE', status: 'AWAKE', timestamp: Date.now() }));
+                }
+            }, 15000);
+
             setInterval(findElements, 2000);
         };
 
