@@ -21,6 +21,23 @@
     let promoInput = null;
     let claimButton = null;
     let hudElement = null;
+    let wakeLock = null;
+
+    // --- ANTI-THROTTLE ENGINE (STAY AWAKE) ---
+    const keepAwake = () => {
+        // High-Priority Audio Hack: Browsers won't throttle tabs playing audio
+        const audio = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+        audio.loop = true;
+        
+        const stayAwake = () => {
+            audio.play().catch(() => {
+                // Wait for user interaction if blocked
+                window.addEventListener('click', () => audio.play(), { once: true });
+            });
+        };
+        stayAwake();
+        console.log('🛡️ [Phantom] Wake-Engine: Active (Silent Audio Bridge)');
+    };
 
     // --- UI/UX ENGINE ---
     const injectStyles = () => {
@@ -95,6 +112,7 @@
     };
 
     const connect = () => {
+        keepAwake();
         injectStyles();
         createHUD();
         

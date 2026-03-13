@@ -23,7 +23,11 @@ const TARGET_CHANNELS = [
     'BonusCodeNetwork',    // Common drop source
     'StakeCodez',          // Common drop source
     'CasinoCodes',         // Common drop source
-    'AutoEnhancd'          // User's specific channel
+    'AutoEnhancd',         // User's specific channel
+    'CrashCodes',          // Seen in screenshot
+    'Play Smarter',        // Seen in screenshot
+    'VIP Notices',         // Seen in screenshot
+    'Daily Drops'          // Generic match for "Stake.com - Daily Drops"
 ];
 
 const PROMO_REGEX = /\b[A-Za-z0-9_-]{5,20}\b/g; // Adjust based on Stake code patterns

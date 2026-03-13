@@ -14,8 +14,14 @@ Professional Stake bonus auto-claim suite with Telegram monitoring, stealth brow
 - **Launcher Unified**: `backend/launcher.js` and `index.js` now work together without port conflicts.
 - **Stealth Enhanced**: Added noise filtering for browser logs and improved element discovery.
 - **Automated Claimer**: Fully integrated into the server start flow.
+- **Deep-Wake Engine**: Added silent audio and no-throttle flags for background stability.
 
-## 📂 Project Structure
+## 🤖 Solo Mode: 100% Background
+To run the bot without it using any screen space:
+1.  **Initial Login**: Run once with `HEADLESS=false` in `.env` to log into Stake.
+2.  **Go Background**: Change to `HEADLESS=true` in `.env`.
+3.  **Use Your PC**: The bot will run entirely in the background. You can minimize the terminal or run it as a service. It will NOT throttle or go to sleep even if you are gaming or working in other windows.
+4.  **Monitor via Bot**: Use the Telegram bot's `/screen` command to see what the background browser is seeing at any time.
 - `/backend`: Node.js Express API + Telegram Bot (Telegraf).
 - `/scraper`: Telegram user-bot scraper (gramjs).
 - `/frontend`: Marketing landing page for the service.
