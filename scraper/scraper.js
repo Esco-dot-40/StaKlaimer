@@ -134,8 +134,8 @@ async function startScraper() {
             console.log(`[Message Received] From ${channelName}`);
             // console.log(`[Text] ${message.text.substring(0, 100)}...`);
             
-            // Refined Stake Code Regex (alphanumeric, usually 7+ chars)
-            const matches = message.text.match(/\b[A-Za-z0-9_-]{7,40}\b/g);
+            // Refined Stake Code Regex (alphanumeric, usually 5+ chars up to 40)
+            const matches = message.text.match(/\b[A-Za-z0-9_-]{5,40}\b/g);
             if (matches) {
                 for (const code of matches) {
                     if (isLikelyCode(code)) {
@@ -164,32 +164,19 @@ function isLikelyCode(str) {
     const upperStr = str.toUpperCase();
     if (blacklist.some(word => upperStr.includes(word) && upperStr.length === word.length)) return false;
 
-    // 2. Length check (Stake codes are almost always 8+ chars, but we keep 7 for safety)
-    if (str.length < 7) return false;
+    // 2. Length check (Stake codes can sometimes be as small as 5 or 6 characters)
+    if (str.length < 5) return false;
 
     // 3. Reject purely numeric strings (likely amounts or timestamps)
     if (/^\d+$/.test(str)) return false;
 
-    // 4. Heuristic: Reject common sentence words and Usernames
-    // Stake codes are typically ALL CAPS or have specific prefixes.
-    const hasNumbers = /\d/.test(str);
-    const isAllCaps = str === upperStr;
-    const isMixedCase = str !== upperStr && str !== str.toLowerCase();
-    
-    // NEW: Reject lowercase alphanumeric (common for usernames like 'bhinds239')
-    const isLowerAlphanumeric = /^[a-z0-9]+$/.test(str) && !isAllCaps;
-    if (isLowerAlphanumeric && str.length < 12) return false;
+    // 4. If it's pure lowercase letters (no numbers) and looks like a basic word (short), reject it.
+    // However, if it's longer than 10 characters it might be a phrase code like "bonusdrop".
+    if (/^[a-z]+$/.test(str) && str.length < 10) return false;
 
-    // If it's a normal English word pattern (Mixed case without numbers), reject
-    if (isMixedCase && !hasNumbers && str.length < 15) return false;
-
-    // If it's all letters and lowercase, reject
-    if (/^[a-z]+$/.test(str)) return false;
-
-    // Stake codes are usually:
-    // - ALL CAPS + Numbers (STAKE123)
-    // - Specific prefixes (STAKE-, etc)
-    return isAllCaps || (hasNumbers && str.length > 8) || str.length > 15;
+    // Reject obvious English words that are title case or lower case (simplistic check)
+    // If it has numbers, uppercase, or hyphens/underscores, it's very likely a code.
+    return true;
 }
 
 async function sendToVanguard(code, source, msgId) {
