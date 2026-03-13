@@ -1,5 +1,21 @@
-require('dotenv').config();
-const { Telegraf, Markup } = require('telegraf');
+// Capture logs for the /logs command
+const logBuffer = [];
+const originalLog = console.log;
+const originalError = console.error;
+
+console.log = (...args) => {
+    logBuffer.push(`[LOG] ${args.join(' ')}`);
+    if (logBuffer.length > 50) logBuffer.shift();
+    originalLog.apply(console, args);
+};
+
+console.error = (...args) => {
+    logBuffer.push(`[ERR] ${args.join(' ')}`);
+    if (logBuffer.length > 50) logBuffer.shift();
+    originalError.apply(console, args);
+};
+
+// ... existing imports ...
 const db = require('./db');
 const state = require('./state');
 const launcher = require('./launcher');
@@ -113,13 +129,18 @@ if (bot) {
     bot.command('ping', (ctx) => ctx.reply('🏓 Pong! Bot is alive and well.'));
 
     bot.command('boot', async (ctx) => {
-        ctx.reply("⚙️ *Starting Solo Engine...*");
+        ctx.reply("⚙️ *Starting Solo Engine...*\nStep 1: Triggering Chrome...");
         try {
             await launcher.launchApp();
-            ctx.reply("✅ *Solo Engine Started!* Use /status to verify.");
+            ctx.reply("✅ *Engine Initialized.* Check /screen in 10 seconds to see if you are logged in.");
         } catch (e) {
-            ctx.reply(`❌ *Engine Failed:* ${e.message}`);
+            ctx.reply(`❌ *Ignition Failed:* ${e.message}`);
         }
+    });
+
+    bot.command('logs', (ctx) => {
+        const logs = logBuffer.slice(-15).join('\n');
+        ctx.replyWithMarkdown(`📋 *Recent Server Logs:*\n\`\`\`\n${logs || 'No logs captured yet.'}\n\`\`\``);
     });
 
     bot.command('screen', async (ctx) => {
@@ -143,6 +164,7 @@ const initBot = () => {
         bot.telegram.setMyCommands([
             { command: 'status', description: 'Monitor live connection & recent claims' },
             { command: 'screen', description: 'View real-time Stake browser feed' },
+            { command: 'logs', description: 'View recent server console output' },
             { command: 'boot', description: 'Manually start/restart the browser engine' },
             { command: 'connect', description: 'Check engine sync status' },
             { command: 'test', description: 'Simulate a code drop to verify system' },
