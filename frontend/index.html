@@ -3,299 +3,225 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vanguard Console | Solo Mode Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <title>Vanguard Claimer | Never Miss a Stake Bonus</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Orbitron:wght@700&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #00e701;
-            --bg: #030712;
-            --card: rgba(17, 24, 39, 0.7);
-            --border: rgba(255, 255, 255, 0.1);
-            --glow: rgba(0, 231, 1, 0.15);
+            --bg: #050a14;
+            --card: rgba(16, 24, 39, 0.6);
+            --border: rgba(0, 231, 1, 0.1);
         }
 
         body {
             font-family: 'Outfit', sans-serif;
             background-color: var(--bg);
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(0, 231, 1, 0.05) 0%, transparent 20%),
-                radial-gradient(circle at 90% 80%, rgba(0, 231, 1, 0.05) 0%, transparent 20%);
+            background-image: radial-gradient(circle at top right, rgba(0, 231, 1, 0.05) 0%, transparent 40%);
             color: #f8fafc;
             margin: 0;
-            padding: 24px;
-            min-height: 100vh;
+            padding: 0;
+            line-height: 1.6;
         }
 
         .header {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            max-width: 1400px;
-            margin: 0 auto 40px;
         }
 
         .logo {
-            font-weight: 800;
+            font-family: 'Orbitron', sans-serif;
             font-size: 1.5rem;
-            letter-spacing: -1px;
+            color: var(--primary);
+            letter-spacing: 2px;
             display: flex;
             align-items: center;
             gap: 12px;
         }
-
+        
         .logo-box {
-            width: 32px;
-            height: 32px;
+            width: 24px;
+            height: 24px;
             background: var(--primary);
-            border-radius: 8px;
             box-shadow: 0 0 15px var(--primary);
         }
 
-        .status-badge {
-            background: rgba(0, 231, 1, 0.1);
-            border: 1px solid var(--primary);
-            color: var(--primary);
-            padding: 6px 16px;
-            border-radius: 100px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        .hero {
+            max-width: 800px;
+            margin: 80px auto;
+            text-align: center;
+            padding: 0 20px;
         }
 
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            background: var(--primary);
-            border-radius: 50%;
-            box-shadow: 0 0 10px var(--primary);
-            animation: pulse 2s infinite;
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            line-height: 1.1;
         }
 
-        @keyframes pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
-            100% { opacity: 1; transform: scale(1); }
-        }
+        h1 span { color: var(--primary); }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .card {
-            background: var(--card);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 24px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-        }
-
-        .card-title {
+        .subtitle {
+            font-size: 1.2rem;
             color: #94a3b8;
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-bottom: 16px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            margin-bottom: 40px;
         }
 
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: 800;
-        }
-
-        .log-container {
-            grid-column: span 2;
-            height: 500px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .log-feed {
-            flex: 1;
-            overflow-y: auto;
-            font-family: 'monospace';
-            font-size: 0.85rem;
-            color: #cbd5e1;
-            padding-right: 8px;
-        }
-
-        .log-entry {
-            padding: 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            display: flex;
-            justify-content: space-between;
+        .cta-btn {
+            display: inline-flex;
             align-items: center;
-            animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .log-code {
-            color: var(--primary);
-            font-weight: 600;
-            background: rgba(0, 231, 1, 0.05);
-            padding: 4px 8px;
-            border-radius: 6px;
-        }
-
-        .log-source {
-            color: #64748b;
-        }
-
-        .sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
-
-        .quick-action {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--border);
-            padding: 16px;
-            border-radius: 16px;
+            gap: 10px;
+            background: var(--primary);
+            color: #000;
             text-decoration: none;
-            color: inherit;
+            padding: 16px 32px;
+            border-radius: 100px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(0, 231, 1, 0.3);
+        }
+
+        .cta-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(0, 231, 1, 0.4);
+        }
+
+        .dashboard {
+            max-width: 1000px;
+            margin: 80px auto;
+            padding: 40px 20px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+        }
+
+        .dashboard h2 {
+            margin-top: 0;
+            font-size: 1.5rem;
             display: flex;
             align-items: center;
             gap: 12px;
-            transition: all 0.2s;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 20px;
+            margin-bottom: 20px;
         }
 
-        .quick-action:hover {
-            background: rgba(255,255,255,0.07);
-            border-color: rgba(255,255,255,0.2);
-            transform: translateX(4px);
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
 
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .h-code { font-family: monospace; font-size: 1.1rem; font-weight: bold; }
+        .h-source { color: #64748b; font-size: 0.9rem; }
+        
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        
+        .status-success { color: #00e701; background: rgba(0, 231, 1, 0.1); }
+        .status-fail { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+        .status-pending { color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+
     </style>
 </head>
 <body>
+
     <header class="header">
         <div class="logo">
             <div class="logo-box"></div>
-            VANGUARD CONSOLE
+            VANGUARD
         </div>
-        <div class="status-badge" id="service-status">
-            <div class="status-dot"></div>
-            SOLO ENGINE ACTIVE
-        </div>
+        <a href="https://t.me/EnhancerAutomateBot?start=onboard" class="cta-btn" style="padding: 10px 20px; font-size: 0.9rem;">Login</a>
     </header>
 
-    <main class="grid">
-        <div class="card log-container">
-            <div class="card-title">Real-Time Ingestion Feed</div>
-            <div class="log-feed" id="log-feed">
-                <!-- Logs will appear here -->
-                <div class="log-entry">
-                    <span>System initialized. Monitoring 24 channels...</span>
-                    <span class="log-source">SYSTEM</span>
-                </div>
-            </div>
+    <div class="hero">
+        <h1>Auto-Claim Your <span>Stake Bonuses</span> Instantly</h1>
+        <p class="subtitle">Private, high-speed stealth claimer. We monitor Telegram, Kick, and X 24/7. When a code drops, our network injects it directly into your Stake account in milliseconds.</p>
+        <a href="https://t.me/EnhancerAutomateBot?start=onboard" class="cta-btn">
+            <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg>
+            Start on Telegram
+        </a>
+    </div>
+
+    <div class="dashboard">
+        <h2>
+            <div style="width: 10px; height: 10px; background: var(--primary); border-radius: 50%; box-shadow: 0 0 10px var(--primary);"></div>
+            Live Network History
+        </h2>
+        <div class="history-list" id="history-container">
+            <div style="text-align: center; color: #64748b; padding: 20px;">Fetching recent drops...</div>
         </div>
-
-        <div class="sidebar">
-            <div class="card">
-                <div class="card-title">Total Claims</div>
-                <div class="stat-value" id="stats-claims">0</div>
-            </div>
-
-            <div class="card">
-                <div class="card-title">Active Nodes</div>
-                <div class="stat-value" id="stats-nodes">1</div>
-            </div>
-
-            <div class="card">
-                <div class="card-title">Quick Actions</div>
-                <a href="https://t.me/EnhancerAutomateBot" class="quick-action" target="_blank">
-                    <span>🤖</span>
-                    Open Telegram Bot
-                </a>
-                <a href="#" class="quick-action" onclick="testCode()">
-                    <span>🧪</span>
-                    Trigger Test Drop
-                </a>
-            </div>
-        </div>
-    </main>
+    </div>
 
     <script>
-        const logFeed = document.getElementById('log-feed');
-        const claimsStat = document.getElementById('stats-claims');
-        let claimCount = 0;
+        async function loadHistory() {
+            try {
+                // If hosted on Netlify, this points to your Railway URL. 
+                // Using relative /api/history for now assuming same origin.
+                const apiUrl = window.location.hostname === 'localhost' || window.location.hostname.includes('railway.app') 
+                    ? '/api/history' 
+                    : 'https://staklaimer-production.up.railway.app/api/history';
 
-        // WebSocket Connection for Dashboard
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const socket = new WebSocket(`${protocol}//${window.location.host}?userId=dashboard&type=monitor`);
+                const res = await fetch(apiUrl);
+                const claims = await res.json();
+                const container = document.getElementById('history-container');
+                container.innerHTML = '';
 
-        socket.onmessage = (event) => {
-            const payload = JSON.parse(event.data);
-            if (payload.type === 'LOG_EVENT') {
-                const { code, source, timestamp } = payload.data;
-                addLogEntry(code, source, timestamp);
-                claimCount++;
-                claimsStat.innerText = claimCount;
-            }
-        };
+                if (claims.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; color: #64748b; padding: 20px;">No codes detected recently.</div>';
+                    return;
+                }
 
-        socket.onopen = () => {
-            console.log('Vanguard Console Connected');
-        };
+                claims.forEach(claim => {
+                    const el = document.createElement('div');
+                    el.className = 'history-item';
+                    
+                    let statusClass = 'status-fail';
+                    let statusText = claim.status || 'Failed';
+                    
+                    if (statusText === 'Success') {
+                        statusClass = 'status-success';
+                    } else if (statusText === 'identified') {
+                        statusClass = 'status-pending';
+                        statusText = 'Pending';
+                    }
 
-        socket.onclose = () => {
-            document.getElementById('service-status').innerHTML = '<div class="status-dot" style="background: #ef4444; box-shadow: 0 0 10px #ef4444;"></div> ENGINE OFFLINE';
-            document.getElementById('service-status').style.borderColor = '#ef4444';
-            document.getElementById('service-status').style.color = '#ef4444';
-        };
-
-        function addLogEntry(code, source, timestamp) {
-            const entry = document.createElement('div');
-            entry.className = 'log-entry';
-            const timeStr = new Date(timestamp).toLocaleTimeString();
-            
-            entry.innerHTML = `
-                <div>
-                    <span class="log-code">${code}</span>
-                    <span style="margin-left: 10px; color: #64748b;">detected at ${timeStr}</span>
-                </div>
-                <span class="log-source">${source}</span>
-            `;
-            
-            logFeed.prepend(entry);
-            if (logFeed.children.length > 50) {
-                logFeed.lastElementChild.remove();
+                    el.innerHTML = `
+                        <div>
+                            <div class="h-code">${claim.code}</div>
+                            <div class="h-source">${claim.source}</div>
+                        </div>
+                        <div class="status-badge ${statusClass}">${statusText}</div>
+                    `;
+                    container.appendChild(el);
+                });
+            } catch (err) {
+                console.error("Failed to load history", err);
             }
         }
 
-        async function testCode() {
-            const testCode = 'TEST-' + Math.random().toString(36).substring(2, 7).toUpperCase();
-            await fetch('/api/new-code', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: testCode, source: 'Dashboard Manual', type: 'test' })
-            });
-        }
+        loadHistory();
+        setInterval(loadHistory, 10000); // Reload every 10s
     </script>
 </body>
 </html>

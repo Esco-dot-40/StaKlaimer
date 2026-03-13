@@ -4,6 +4,8 @@ const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
 const fs = require('fs');
+const cors = require('cors');
+const axios = require('axios');
 const db = require('./db');
 const payments = require('./payments');
 const state = require('./state');
@@ -19,29 +21,31 @@ function init() {
 // In-memory store for connected clients is now in state.js object
 const clients = state.clients;
 
+app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date() }));
 
-// Serving the userscript with dynamic BASE_URL for easy installation
-app.get('/claimer.user.js', (req, res) => {
-    const filePath = path.join(__dirname, '../shared/claimer.user.js');
-    let content = fs.readFileSync(filePath, 'utf8');
-    
-    // Inject the real server URL into the script automatically
-    let baseUrl = process.env.BASE_URL || `localhost:${PORT}`;
-    
-    // Clean up baseUrl (remove http/https if present to normalize)
-    baseUrl = baseUrl.replace(/^https?:\/\//, '');
-    
-    // In production (Railway), always use wss://. Locally use ws://
-    const protocol = (process.env.BASE_URL && !process.env.BASE_URL.includes('localhost')) ? 'wss' : 'ws';
-    const wsUrl = `${protocol}://${baseUrl}`;
-    
-    content = content.replace(
-        "const WS_URL = window.PHANTOM_INTERNAL_SERVER || 'ws://staklaimer-production.up.railway.app?userId=vanguard_user&type=browser';",
-        `const WS_URL = window.PHANTOM_INTERNAL_SERVER || '${wsUrl}?userId=vanguard_user&type=browser';`
-    );
+    // Serving the userscript with dynamic BASE_URL for easy installation
+    app.get('/claimer.user.js', (req, res) => {
+        const tgId = req.query.tgId || 'anonymous';
+        const filePath = path.join(__dirname, '../shared/claimer.user.js');
+        let content = fs.readFileSync(filePath, 'utf8');
+        
+        // Inject the real server URL into the script automatically
+        let baseUrl = process.env.BASE_URL || `localhost:${PORT}`;
+        
+        // Clean up baseUrl (remove http/https if present to normalize)
+        baseUrl = baseUrl.replace(/^https?:\/\//, '');
+        
+        // In production (Railway), always use wss://. Locally use ws://
+        const protocol = (process.env.BASE_URL && !process.env.BASE_URL.includes('localhost')) ? 'wss' : 'ws';
+        const wsUrl = `${protocol}://${baseUrl}`;
+        
+        content = content.replace(
+            "const WS_URL = window.PHANTOM_INTERNAL_SERVER || 'ws://staklaimer-production.up.railway.app?userId=vanguard_user&type=browser';",
+            `const WS_URL = window.PHANTOM_INTERNAL_SERVER || '${wsUrl}?userId=${tgId}&type=browser';`
+        );
     
     res.type('application/javascript').send(content);
 });
@@ -87,6 +91,24 @@ wss.on('connection', (ws, req) => {
             } else if (data.type === 'CLAIM_RESULT') {
                 console.log(`📊 RESULT from [${userId}] for [${data.code}]: ${data.status}`);
                 await db.updateClaimStatus(data.code, data.status);
+                
+                if (userId && userId !== 'vanguard_local' && userId !== 'vanguard_user' && userId !== 'anonymous' && TELEGRAM_TOKEN) {
+                    try {
+                        let msg = ``;
+                        if (data.status === 'Success') {
+                            msg = `✅ *WINNER!* Successfully claimed \`${data.code}\` to your Stake Account!`;
+                        } else {
+                            msg = `❌ *Code Attempted:* \`${data.code}\`\n*Result:* ${data.status}`;
+                        }
+                        await axios.post(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+                            chat_id: userId,
+                            text: msg,
+                            parse_mode: 'Markdown'
+                        });
+                    } catch (err) {
+                        console.error(`Failed to notify user ${userId}:`, err.message);
+                    }
+                }
             }
         } catch (e) {
             console.error('Error parsing WS message', e);
@@ -140,6 +162,16 @@ app.post('/api/new-code', async (req, res) => {
     });
 
     res.json({ success: true, clientsNotified: activeCount });
+});
+
+// --- Dashboard APIs ---
+app.get('/api/history', async (req, res) => {
+    try {
+        const recent = await db.getRecentClaims(15);
+        res.json(recent);
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to fetch history' });
+    }
 });
 
 // --- Payment & Registration Endpoints ---

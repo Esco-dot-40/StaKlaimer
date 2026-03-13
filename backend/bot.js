@@ -38,28 +38,29 @@ if (bot) {
         return next();
     });
 
-    // Bot starts immediately for the user
+    // Bot Onboarding Flow
     bot.start(async (ctx) => {
         ctx.replyWithMarkdown(
-            "👋 *Stake Stealth Claimer (Solo Mode)*\n\n" +
-            "Your ID: `" + ctx.from.id + "`\n\n" +
-            "Everything is pre-activated for you. Our scrapers are monitoring channels.\n\n" +
-            "💡 *Tip:* Ensure your browser window is open and showing the Stake bonus tab."
+            "👋 *Welcome to Vanguard Stealth Claimer*\n\n" +
+            "I automatically claim Stake bonus codes for you, milliseconds after they drop.\n\n" +
+            "To get started, please link your Stake account by replying with:\n" +
+            "`/setuser YourStakeUsername`"
         );
     });
 
-    bot.command('id', (ctx) => {
-        ctx.reply(`Your Telegram ID: ${ctx.from.id}`);
-    });
-
-    bot.action('activate', async (ctx) => {
-        db.activateUser(ctx.from.id);
-        await ctx.answerCbQuery("Account Activated!");
-        await ctx.editMessageText(
-            "🚀 *Account Activated!*\n\n" +
-            "You are now linked to the Vanguard network. Our scrapers are monitoring Telegram, Kick, and X 24/7.\n\n" +
-            "💡 *Tip:* Stay on the Stake page for maximum claim speed.",
-            { parse_mode: 'Markdown' }
+    bot.command('setuser', async (ctx) => {
+        const username = ctx.message.text.split(' ')[1];
+        if (!username) return ctx.reply("❌ Please provide your Stake username. Example: `/setuser MyName123`", {parse_mode: 'Markdown'});
+        
+        await db.registerUser(ctx.from.id, ctx.from.username || 'unknown', username);
+        await db.activateUser(ctx.from.id);
+        
+        const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+        ctx.replyWithMarkdown(
+            `✅ *Account Linked!*\n\nStake Username: \`${username}\`\n\n` +
+            `Now, install your personalized Vanguard script to connect your browser to the network:\n` +
+            `👉 [Download Script](${baseUrl}/claimer.user.js?tgId=${ctx.from.id})\n\n` +
+            `Keep Stake.com open in your browser, and Vanguard will handle the rest!`
         );
     });
 
