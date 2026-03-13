@@ -143,8 +143,10 @@ if (bot) {
     });
 
     bot.command('logs', (ctx) => {
-        const logs = logBuffer.slice(-15).join('\n');
-        ctx.replyWithMarkdown(`📋 *Recent Server Logs:*\n\`\`\`\n${logs || 'No logs captured yet.'}\n\`\`\``);
+        const logs = logBuffer.slice(-50).join('\n');
+        // If logs are still too long, send as a snippet
+        const cleanLogs = logs.length > 4000 ? logs.substring(logs.length - 4000) : logs;
+        ctx.replyWithMarkdown(`📋 *Full Server Logs (Last 50):*\n\`\`\`\n${cleanLogs || 'No logs captured yet.'}\n\`\`\``);
     });
 
     bot.command('screen', async (ctx) => {
