@@ -46,29 +46,41 @@ if (bot) {
     });
 
     bot.command('status', async (ctx) => {
-        const recent = await db.getRecentClaims(5);
-        let claimText = recent.map(c => `🔹 \`${c.code}\` (${c.source})`).join('\n') || "No recent claims.";
+        const recent = await db.getRecentClaims(10);
+        let claimText = recent.map(c => `🔹 \`${c.code}\` (${c.source})`).join('\n') || "_No codes detected in the last 24h._";
 
         const isBrowserConnected = state.clients.size > 0;
-        const statusEmoji = isBrowserConnected ? "🟢 Connected" : "🔴 Disconnected";
+        const statusEmoji = isBrowserConnected ? "🟢 ACTIVE" : "🔴 STANDBY";
 
         ctx.replyWithMarkdown(
-            `🛡️ *Vanguard Engine:* ${statusEmoji}\n` +
-            `📡 *Active Browsers:* \`${state.clients.size}\`\n\n` +
-            `🕒 *Recent Network Claims:*\n${claimText}`
+            `🛰️ *VANGUARD HUB STATUS*\n` +
+            `━━━━━━━━━━━━━━━━━━━━\n` +
+            `🖥️ *Engine:* ${statusEmoji}\n` +
+            `📡 *Active Nodes:* \`${state.clients.size}\` (Solo Instance)\n\n` +
+            `🕒 *Recent Network Activity:*\n${claimText}\n\n` +
+            `💡 _Use /screen to see the live browser feed._`
         );
     });
 
-    bot.command('setup', (ctx) => {
+    bot.command('connect', (ctx) => {
+        const isBrowserConnected = state.clients.size > 0;
         const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
-        ctx.replyWithMarkdown(
-            `🛠️ *Vanguard Setup*\n\n` +
-            `To connect your personal browser, follow these steps:\n\n` +
-            `1. Install [Tampermonkey](https://www.tampermonkey.net/) extension.\n` +
-            `2. Click this link to install your personalized script:\n` +
-            `👉 [Install Vanguard Claimer Mode](${baseUrl}/claimer.user.js)\n\n` +
-            `Once installed, navigate to [Stake.com](https://stake.com/?tab=offers&modal=redeemBonus) and the status will turn green!`
-        );
+        
+        if (isBrowserConnected) {
+            ctx.replyWithMarkdown(
+                "✅ *Vanguard: Linked & Synchronized*\n\n" +
+                "The server's internal browser is currently at Stake.com and ready to claim. " +
+                "You do *not* need to keep any tabs open on your device."
+            );
+        } else {
+            ctx.replyWithMarkdown(
+                "⚠️ *Vanguard: Not Synchronized*\n\n" +
+                "The server hasn't established a handshake with the browser yet.\n\n" +
+                "1. If you want to use **Solo Mode**, wait for the server to finish initializing.\n" +
+                "2. If you want to monitor **Manually**, install the script here:\n" +
+                `👉 [Vanguard Claimer Script](${baseUrl}/claimer.user.js)`
+            );
+        }
     });
 
     bot.command('test', async (ctx) => {
@@ -117,6 +129,15 @@ if (bot) {
 
 const initBot = () => {
     if (bot) {
+        // Register commands with Telegram UI automatically
+        bot.telegram.setMyCommands([
+            { command: 'status', description: 'Monitor live connection & recent claims' },
+            { command: 'screen', description: 'View real-time Stake browser feed' },
+            { command: 'connect', description: 'Check engine sync status' },
+            { command: 'test', description: 'Simulate a code drop to verify system' },
+            { command: 'ping', description: 'Check bot heartbeat' }
+        ]);
+
         bot.launch().catch(err => {
             if (err.description && err.description.includes('Conflict')) {
                 console.warn('⚠️ Bot Conflict: Another instance is already running. This is normal during rolling updates.');
