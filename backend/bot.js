@@ -69,7 +69,7 @@ if (bot) {
 
         const engineActive = state.isEngineActive();
         const statusEmoji = engineActive ? "🟢 ACTIVE" : "🔴 STANDBY";
-        const captchaStatus = process.env.NOPECHA_KEY ? "✅ ARMED (Free 100/day)" : "❌ DISABLED";
+        const captchaStatus = "✅ FREE STEALTH";
 
         ctx.replyWithMarkdown(
             `🛰️ *VANGUARD HUB STATUS*\n` +
