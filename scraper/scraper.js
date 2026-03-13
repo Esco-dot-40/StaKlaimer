@@ -105,9 +105,10 @@ function isLikelyCode(str) {
 }
 
 async function sendToVanguard(code, source, msgId) {
+    const PORT = process.env.PORT || 3000;
     try {
         // 1. Forward to Backend for Browser Injection
-        await axios.post('http://localhost:3000/api/new-code', {
+        await axios.post(`http://localhost:${PORT}/api/new-code`, {
             code: code,
             source: `Telegram / ${source}`,
             type: 'auto-scrape'

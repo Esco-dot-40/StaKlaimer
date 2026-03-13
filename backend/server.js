@@ -110,8 +110,8 @@ app.post('/api/payments/ipn-callback', async (req, res) => {
     res.send('OK');
 });
 
-    server.listen(PORT, () => {
-        console.log(`Vanguard Backend running on http://localhost:${PORT}`);
+    server.listen(PORT, '0.0.0.0', () => {
+        console.log(`🌐 Vanguard Backend listening on PORT: ${PORT}`);
     });
 }
 

@@ -38,10 +38,11 @@ async function launchApp() {
     const claimerPath = path.join(__dirname, '../shared/claimer.user.js');
     const claimerCode = fs.readFileSync(claimerPath, 'utf8');
     
-    await page.addInitScript(() => {
+    const PORT = process.env.PORT || 3000;
+    await page.addInitScript((port) => {
         // We override the WS URL to localhost for the internal server
-        window.PHANTOM_INTERNAL_SERVER = 'ws://localhost:3000';
-    });
+        window.PHANTOM_INTERNAL_SERVER = `ws://localhost:${port}`;
+    }, PORT);
 
     // Handle Page Crashes/Reloads
     page.on('domcontentloaded', async () => {

@@ -52,6 +52,12 @@ if (bot) {
             `🕒 *Recent Network Claims:*\n${claimText}`
         );
     });
+
+    bot.command('connect', (ctx) => {
+        ctx.replyWithMarkdown("🔗 *Connecting to Vanguard...*\n\nStatus: `Online`\nSignal: `Strong`\n\nYour browser instance is being monitored.");
+    });
+
+    bot.command('ping', (ctx) => ctx.reply('🏓 Pong! Bot is alive and well.'));
 }
 
 const initBot = () => {
