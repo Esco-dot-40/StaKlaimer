@@ -5,8 +5,8 @@ const input = require("input");
 const axios = require("axios");
 require('dotenv').config();
 
-const apiId = parseInt(process.env.TELEGRAM_API_ID);
-const apiHash = process.env.TELEGRAM_API_HASH;
+const apiId = parseInt(process.env.TELEGRAM_API_ID || process.env.APP_API_ID);
+const apiHash = process.env.TELEGRAM_API_HASH || process.env.APP_API_HASH;
 const stringSession = new StringSession(process.env.TELEGRAM_SESSION || ""); 
 
 // Configuration: Add the channel usernames you want to monitor here
