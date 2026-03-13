@@ -1,5 +1,4 @@
 const { Pool } = require('pg');
-const Database = require('better-sqlite3');
 const path = require('path');
 require('dotenv').config({ path: '../.env' });
 
@@ -16,6 +15,7 @@ if (isPostgres) {
     });
 } else {
     console.log('📁 Using SQLite (Local/Development Mode)');
+    const Database = require('better-sqlite3');
     const dbPath = path.join(__dirname, '../data.db');
     sqliteDb = new Database(dbPath);
 }
