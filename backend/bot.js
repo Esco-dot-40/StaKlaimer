@@ -2,6 +2,7 @@ require('dotenv').config();
 const { Telegraf, Markup } = require('telegraf');
 const db = require('./db');
 const state = require('./state');
+const launcher = require('./launcher');
 
 const token = process.env.TELEGRAM_TOKEN;
 if (!token) {
@@ -98,6 +99,20 @@ if (bot) {
     });
 
     bot.command('ping', (ctx) => ctx.reply('🏓 Pong! Bot is alive and well.'));
+
+    bot.command('screen', async (ctx) => {
+        ctx.reply("📸 *Capturing Live View...* Please wait.");
+        try {
+            const screenshot = await launcher.takeScreenshot();
+            if (screenshot) {
+                await ctx.replyWithPhoto({ source: screenshot }, { caption: "🖼️ *Current Phantom View*\nThis is what the server-side browser sees on Stake." });
+            } else {
+                ctx.reply("🔴 *No Active Session Found.*\nThe browser isn't running on the server yet.");
+            }
+        } catch (e) {
+            ctx.reply(`❌ *Failed to capture:* ${e.message}`);
+        }
+    });
 }
 
 const initBot = () => {
