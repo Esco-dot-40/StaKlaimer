@@ -80,6 +80,8 @@ wss.on('connection', (ws, req) => {
             const data = JSON.parse(message);
             if (data.type === 'STATUS_UPDATE') {
                 console.log(`Status from ${userId}: ${data.status}`);
+            } else if (data.type === 'CLAIM_RECEIPT') {
+                console.log(`✅ RECEIPT: Browser [${userId}] confirmed receipt of code: [${data.code}]`);
             }
         } catch (e) {
             console.error('Error parsing WS message', e);
@@ -109,14 +111,16 @@ app.post('/api/new-code', async (req, res) => {
     });
 
     let activeCount = 0;
-    clients.forEach((ws) => {
+    const notifiedIds = [];
+    clients.forEach((ws, userId) => {
         if (ws.readyState === WebSocket.OPEN) {
             ws.send(payload);
             activeCount++;
+            notifiedIds.push(userId);
         }
     });
 
-    console.log(`Broadcasting to ${activeCount} browser clients via WS`);
+    console.log(`Broadcasting to ${activeCount} browser clients (${notifiedIds.join(', ')}) via WS`);
 
     // Broadcast to all Monitor clients (for the real-time Dashboard)
     const dashboardPayload = JSON.stringify({

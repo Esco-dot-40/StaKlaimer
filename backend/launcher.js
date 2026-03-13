@@ -26,24 +26,20 @@ async function launchApp() {
     try {
         console.log(`🚀 [Engine] Attempting Chromium launch...`);
         
-        const browser = await chromium.launch({
+        const userDataDir = path.join(process.cwd(), 'user_data');
+        if (!fs.existsSync(userDataDir)) fs.mkdirSync(userDataDir);
+
+        const browser = await chromium.launchPersistentContext(userDataDir, {
             headless: isHeadless,
+            viewport: { width: 1280, height: 720 },
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-gpu',
-                '--disable-dev-shm-usage',
-                '--single-process',
-                '--no-zygote'
+                '--start-maximized',
+                '--disable-blink-features=AutomationControlled'
             ]
         });
 
-        const context = await browser.newContext({
-            viewport: { width: 1280, height: 720 },
-            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-        });
-
-        const page = await context.newPage();
+        const page = browser.pages()[0] || await browser.newPage();
         activePage = page;
         
         const claimerPath = path.join(__dirname, '../shared/claimer.user.js');
@@ -69,7 +65,7 @@ async function launchApp() {
         const targetUrl = 'https://stake.com/?tab=offers&modal=redeemBonus';
         console.log(`📡 [Engine] Navigating to Stake...`);
         
-        await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 90000 });
+        await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 120000 });
         
         // --- FREE AUDIO-SOLVER BRIDGE ---
         console.log('🤖 [Engine] Captcha Sentry Armed (Free Audio Mode)');

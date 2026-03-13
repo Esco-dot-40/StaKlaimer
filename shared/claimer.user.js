@@ -77,8 +77,15 @@
 
     // --- LOGIC ENGINE ---
     const findElements = () => {
-        promoInput = document.querySelector('input[name="code"]') || document.querySelector('input[placeholder*="Code"]');
-        claimButton = document.querySelector('button[type="submit"]') || document.querySelector('button.variant-primary');
+        promoInput = document.querySelector('input[name="code"]') || 
+                     document.querySelector('input[placeholder*="Code"]') ||
+                     document.querySelector('input[placeholder*="Promo"]') ||
+                     document.querySelector('input[type="text"]'); // Fallback
+                     
+        claimButton = document.querySelector('button[type="submit"]') || 
+                      document.querySelector('button.variant-primary') ||
+                      document.querySelector('button[data-testid="redeem-button"]') ||
+                      document.evaluate("//button[contains(., 'Redeem')]", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
 
         if (promoInput && claimButton) {
             if (socket && socket.readyState === WebSocket.OPEN) {
@@ -90,7 +97,14 @@
     const connect = () => {
         injectStyles();
         createHUD();
-        socket = new WebSocket(WS_URL);
+        
+        // Ensure WS_URL has the expected query parameters
+        let finalUrl = WS_URL;
+        if (!finalUrl.includes('?')) {
+            finalUrl += '?userId=vanguard_local&type=browser';
+        }
+        
+        socket = new WebSocket(finalUrl);
 
         socket.onopen = () => {
             showSplash("SYNCHRONIZED WITH VANGUARD CLOUD");
@@ -110,9 +124,17 @@
             try {
                 const data = JSON.parse(event.data);
                 if (data.type === 'CLAIM_CODE') {
-                    handleClaim(data.code);
+                    const code = data.code;
+                    console.log(`🎯 Code Received from Vanguard Cloud: [${code}]`);
+                    
+                    // Send receipt back to server
+                    socket.send(JSON.stringify({ type: 'CLAIM_RECEIPT', code: code, timestamp: Date.now() }));
+                    
+                    handleClaim(code);
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.error("Error parsing WebSocket message:", e);
+            }
         };
 
         socket.onclose = () => {

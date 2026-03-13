@@ -64,6 +64,23 @@ async function startScraper() {
     });
 
     console.log("✅ Scraper Connected to Telegram!");
+    
+    // Log joined channels for verification
+    try {
+        const dialogs = await client.getDialogs({});
+        const joinedUsernames = dialogs.map(d => (d.entity.username || '').toLowerCase());
+        console.log(`📊 Joined Dialogs: ${dialogs.length}`);
+        
+        const monitored = TARGET_CHANNELS.filter(t => joinedUsernames.includes(t.toLowerCase()));
+        console.log(`📡 Monitoring ${monitored.length}/${TARGET_CHANNELS.length} Target Channels:`, monitored);
+        
+        if (monitored.length === 0) {
+            console.warn("⚠️ WARNING: Not joined to ANY target channels! The scraper won't see anything.");
+        }
+    } catch (e) {
+        console.log("⚠️ Could not list dialogs.");
+    }
+    
     console.log("Session String (Save this to .env as TELEGRAM_SESSION to skip login next time):");
     console.log(client.session.save());
 
@@ -84,14 +101,18 @@ async function startScraper() {
 
             if (!isTarget) return;
 
-            console.log(`[Message Received] From ${channelName}: ${message.text.substring(0, 50)}...`);
+            console.log(`[Message Received] From ${channelName}`);
+            // console.log(`[Text] ${message.text.substring(0, 100)}...`);
             
-            // Extract code
-            const codeMatch = message.text.match(/[A-Za-z0-9-]{5,}/);
-            if (codeMatch) {
-                const code = codeMatch[0];
-                console.log(`🎯 Potential Code Found: ${code}`);
-                await sendToVanguard(code, channelName, message.id);
+            // Refined Stake Code Regex (alphanumeric, usually 7+ chars)
+            const matches = message.text.match(/\b[A-Za-z0-9_-]{7,40}\b/g);
+            if (matches) {
+                for (const code of matches) {
+                    if (isLikelyCode(code)) {
+                        console.log(`🎯 Potential Code Found: [${code}]`);
+                        await sendToVanguard(code, channelName, message.id);
+                    }
+                }
             }
         } catch (handlerErr) {
             console.error('❌ Scraper Event Error:', handlerErr.message);
@@ -100,11 +121,42 @@ async function startScraper() {
 }
 
 function isLikelyCode(str) {
-    // Basic heuristics: Stake codes usually are uppercase, numbers, and specific lengths
-    // Customize this to filter out noise
-    const commonWords = ['STAKE', 'BONUS', 'CLAIM', 'LINK', 'HTTPS', 'RELOAD'];
-    if (commonWords.includes(str.toUpperCase())) return false;
-    return str.length >= 6; 
+    // 1. Blacklist of common words and Stake UI terms that aren't codes
+    const blacklist = [
+        'PLATFORM', 'ALREADY', 'CLAIMED', 'DROPPING', 'MULTIPLE', 'STAKE', 
+        'BONUS', 'WELCOME', 'SUPPORT', 'MESSAGE', 'CHANNEL', 'RELOAD',
+        'ADDRESS', 'NETWORK', 'DEPOSIT', 'WITHDRAW', 'BALANCE', 'ACCOUNT',
+        'OFFERS', 'REDEEM', 'SETTINGS', 'ACTIVE', 'VANGUARD', 'STEALTH',
+        'BROWSER', 'INJECT', 'CAPTCHA', 'ENGINE', 'ONLINE', 'MONITOR',
+        'CONNECTED', 'DISCONNECTED', 'SYCHRONIZED', 'POTENTIAL', 'FOUND'
+    ];
+    
+    const upperStr = str.toUpperCase();
+    if (blacklist.some(word => upperStr.includes(word) && upperStr.length === word.length)) return false;
+
+    // 2. Length check (Stake codes are almost always 8+ chars, but we keep 7 for safety)
+    if (str.length < 7) return false;
+
+    // 3. Reject purely numeric strings (likely amounts or timestamps)
+    if (/^\d+$/.test(str)) return false;
+
+    // 4. Heuristic: Reject common sentence words (Title Case or lower case)
+    // Stake codes are typically ALL CAPS or mixed but with numbers.
+    const hasNumbers = /\d/.test(str);
+    const isAllCaps = str === upperStr;
+    const isMixedCase = str !== upperStr && str !== str.toLowerCase();
+    
+    // If it's a normal English word pattern (Mixed case without numbers), reject
+    if (isMixedCase && !hasNumbers && str.length < 15) return false;
+
+    // If it's all letters and lowercase, reject
+    if (/^[a-z]+$/.test(str)) return false;
+
+    // Stake codes are usually:
+    // - ALL CAPS + Numbers (STAKE123)
+    // - Long alphanumeric strings (7+)
+    // - Specific prefixes (STAKE-, etc)
+    return isAllCaps || hasNumbers || str.length > 12;
 }
 
 async function sendToVanguard(code, source, msgId) {
