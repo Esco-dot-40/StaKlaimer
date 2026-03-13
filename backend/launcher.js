@@ -9,9 +9,10 @@ let activePage = null;
 
 async function launchApp() {
     const isHeadless = process.env.HEADLESS !== 'false';
-    const isRailway = !!process.env.RAILWAY_ENVIRONMENT;
+    const isRailway = !!process.env.RAILWAY_ENVIRONMENT || !!process.env.RAILWAY_STATIC_URL || !!process.env.PORT;
     
-    console.log(`🌐 [Engine] Ignition (Headless: ${isHeadless}, Railway: ${isRailway})`);
+    console.log(`🚀 [VANGUARD ENGINE v3.1] Ignition Initiated`);
+    console.log(`🌐 [Engine] Mode: ${isHeadless ? 'Headless' : 'Visible'}, Env: ${isRailway ? 'Railway' : 'Local'}`);
     
     chromium.use(stealth);
 
