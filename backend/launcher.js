@@ -6,15 +6,16 @@ const fs = require('fs');
 
 // Import our server logic (modified to work as a module)
 const startServer = () => {
-    require('./server.js');
+    const init = require('./server.js');
+    if (typeof init === 'function') {
+        init();
+    }
 };
 
 const startScraper = () => {
-    // Correctly path to the scraper directory
-    if (process.env.TELEGRAM_API_ID && process.env.TELEGRAM_API_HASH) {
-        require('../scraper/scraper.js');
-    } else {
-        console.log('💡 Scraper skipped: TELEGRAM_API_ID/HASH not found in .env');
+    const scraper = require('../scraper/scraper.js');
+    if (typeof scraper === 'function') {
+        scraper();
     }
 };
 

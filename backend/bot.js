@@ -13,9 +13,14 @@ if (bot) {
     bot.start(async (ctx) => {
         ctx.replyWithMarkdown(
             "👋 *Stake Stealth Claimer (Solo Mode)*\n\n" +
+            "Your ID: `" + ctx.from.id + "`\n\n" +
             "Everything is pre-activated for you. Our scrapers are monitoring channels.\n\n" +
             "💡 *Tip:* Ensure your browser window is open and showing the Stake bonus tab."
         );
+    });
+
+    bot.command('id', (ctx) => {
+        ctx.reply(`Your Telegram ID: ${ctx.from.id}`);
     });
 
     bot.action('activate', async (ctx) => {

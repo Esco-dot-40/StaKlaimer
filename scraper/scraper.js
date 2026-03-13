@@ -12,8 +12,18 @@ const stringSession = new StringSession(process.env.TELEGRAM_SESSION || "");
 // Configuration: Add the channel usernames you want to monitor here
 const TARGET_CHANNELS = [
     'Stake',              // Official Stake
-    'StakeDrops',        // Example drop channel
-    'StakeBonus',        // Example bonus channel
+    'StakeDrops',        // Official Drops
+    'StakeBonus',        // Bonus Channel
+    'CrashDaddyCourtyard', // Request from User
+    'StakeAutomation',     // Request from User
+    'StakecomDailyDrops',  // Request from User
+    'StakeCasino',         // Request from User
+    'StakeUSA',            // Stake.US
+    'StakeLimits',         // Common drop source
+    'BonusCodeNetwork',    // Common drop source
+    'StakeCodez',          // Common drop source
+    'CasinoCodes',         // Common drop source
+    'AutoEnhancd'          // User's specific channel
 ];
 
 const PROMO_REGEX = /\b[A-Za-z0-9_-]{5,20}\b/g; // Adjust based on Stake code patterns
@@ -48,21 +58,27 @@ async function startScraper() {
 
     client.addEventHandler(async (event) => {
         const message = event.message;
-        const sender = await message.getSender();
+        if (!message || !message.text) return;
+
         const chat = await message.getChat();
+        const channelName = chat.username || chat.title || 'Unknown';
         
         // Check if message is from a target channel
-        const channelName = chat.username || chat.title;
+        const isTarget = TARGET_CHANNELS.some(target => 
+            channelName.toLowerCase().includes(target.toLowerCase())
+        );
+
+        if (!isTarget) return;
+
         console.log(`[Message Received] From ${channelName}: ${message.text.substring(0, 50)}...`);
 
-        // Simple Regex extraction
-        const matches = message.text.match(PROMO_REGEX);
+        // Refined Stake Code Regex (alphanumeric, hashes, usually 8+ chars or specific patterns)
+        const matches = message.text.match(/\b[A-Za-z0-9_-]{7,40}\b/g);
         if (matches) {
             for (const code of matches) {
-                // Filter out common words if necessary
                 if (isLikelyCode(code)) {
                     console.log(`🚀 Found potential Stake code: [${code}]`);
-                    await sendToVanguard(code, channelName);
+                    await sendToVanguard(code, channelName, message.id);
                 }
             }
         }
@@ -77,14 +93,28 @@ function isLikelyCode(str) {
     return str.length >= 6; 
 }
 
-async function sendToVanguard(code, source) {
+async function sendToVanguard(code, source, msgId) {
     try {
+        // 1. Forward to Backend for Browser Injection
         await axios.post('http://localhost:3000/api/new-code', {
             code: code,
             source: `Telegram / ${source}`,
             type: 'auto-scrape'
         });
         console.log(`✅ Code successfully forwarded to Vanguard.`);
+
+        // 2. Notify User via Bot (Optional but recommended)
+        const botToken = process.env.TELEGRAM_TOKEN;
+        const myId = process.env.MY_TELEGRAM_ID; // Add this to .env if you want personal alerts
+        if (botToken && myId) {
+            const botUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+            await axios.post(botUrl, {
+                chat_id: myId,
+                text: `🚀 *NEW CODE FOUND!*\n\nSource: \`${source}\`\nCode: \`${code}\`\n\n[View Message](https://t.me/${source}/${msgId})`,
+                parse_mode: 'Markdown'
+            }).catch(() => {}); // Ignore bot notification errors
+        }
+
     } catch (err) {
         console.error(`❌ Failed to forward code: ${err.message}`);
     }

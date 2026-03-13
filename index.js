@@ -1,6 +1,7 @@
 require('dotenv').config();
 const serverInit = require('./backend/server.js');
 const bot = require('./backend/bot.js');
+const scraperInit = require('./scraper/scraper.js');
 
 console.log('--- StaKlaimer SaaS Initializing ---');
 
@@ -12,6 +13,9 @@ if (typeof serverInit === 'function') {
 }
 
 // Bot is initialized via its own require/launch sequence in bot.js
+if (typeof scraperInit === 'function') {
+    scraperInit();
+}
 
 console.log('🚀 StaKlaimer SaaS Engine Fully Processed');
 console.log('🌍 Public URL:', process.env.BASE_URL || 'Not Set');

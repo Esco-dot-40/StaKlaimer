@@ -14,7 +14,7 @@
     'use strict';
 
     // CONFIGURATION
-    const WS_URL = 'ws://localhost:3000?userId=YOUR_ID_HERE'; // Update with your server and TG ID
+    const WS_URL = window.PHANTOM_INTERNAL_SERVER || 'ws://localhost:3000?userId=vanguard_local';
     const AUTO_SUBMIT = true;
     const LATENCY_LOGGING = true;
 
@@ -27,10 +27,12 @@
     const findElements = () => {
         // Look for common promo input patterns
         promoInput = document.querySelector('input[name="code"]') || 
+                     document.querySelector('input[placeholder*="Bonus Code"]') ||
                      document.querySelector('input[placeholder*="Promo"]') ||
                      document.querySelector('input[placeholder*="Code"]');
         
         claimButton = document.querySelector('button[type="submit"]') || 
+                      document.evaluate("//button[contains(., 'Redeem')]", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue ||
                       document.querySelector('button.variant-primary');
 
         if (promoInput && claimButton) {
