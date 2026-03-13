@@ -35,6 +35,7 @@ const init = async () => {
             id SERIAL PRIMARY KEY,
             code TEXT,
             source TEXT,
+            status TEXT DEFAULT 'identified',
             claimed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `;
@@ -78,11 +79,17 @@ module.exports = {
         }
         return sqliteDb.prepare("UPDATE users SET status = 'activated' WHERE telegram_id = ?").run(tgId);
     },
-    logClaim: async (code, source) => {
+    logClaim: async (code, source, status = 'identified') => {
         if (isPostgres) {
-            return pool.query('INSERT INTO claims (code, source) VALUES ($1, $2)', [code, source]);
+            return pool.query('INSERT INTO claims (code, source, status) VALUES ($1, $2, $3)', [code, source, status]);
         }
-        return sqliteDb.prepare('INSERT INTO claims (code, source) VALUES (?, ?)').run(code, source);
+        return sqliteDb.prepare('INSERT INTO claims (code, source, status) VALUES (?, ?, ?)').run(code, source, status);
+    },
+    updateClaimStatus: async (code, status) => {
+        if (isPostgres) {
+            return pool.query('UPDATE claims SET status = $1 WHERE code = $2', [status, code]);
+        }
+        return sqliteDb.prepare('UPDATE claims SET status = ? WHERE code = ?').run(status, code);
     },
     getRecentClaims: async (limit = 10) => {
         if (isPostgres) {

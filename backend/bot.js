@@ -65,7 +65,10 @@ if (bot) {
 
     bot.command('status', async (ctx) => {
         const recent = await db.getRecentClaims(10);
-        let claimText = recent.map(c => `🔹 \`${c.code}\` (${c.source})`).join('\n') || "_No codes detected in the last 24h._";
+        let claimText = recent.map(c => {
+            const statusEmoji = c.status === 'Success' ? '✅' : (c.status === 'identified' ? '🔍' : '❌');
+            return `${statusEmoji} \`${c.code}\`\n   └ _${c.status}_ (${c.source})`;
+        }).join('\n') || "_No codes detected in the last 24h._";
 
         const engineActive = state.isEngineActive();
         const activeUserNodes = Array.from(state.clients.keys()).filter(id => id !== 'vanguard_user').length;

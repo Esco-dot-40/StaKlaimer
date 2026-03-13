@@ -75,7 +75,7 @@ wss.on('connection', (ws, req) => {
         }
     }, 30000);
 
-    ws.on('message', (message) => {
+    ws.on('message', async (message) => {
         try {
             const data = JSON.parse(message);
             if (data.type === 'STATUS_UPDATE') {
@@ -84,6 +84,9 @@ wss.on('connection', (ws, req) => {
                 }
             } else if (data.type === 'CLAIM_RECEIPT') {
                 console.log(`✅ RECEIPT: Browser [${userId}] confirmed receipt of code: [${data.code}]`);
+            } else if (data.type === 'CLAIM_RESULT') {
+                console.log(`📊 RESULT from [${userId}] for [${data.code}]: ${data.status}`);
+                await db.updateClaimStatus(data.code, data.status);
             }
         } catch (e) {
             console.error('Error parsing WS message', e);

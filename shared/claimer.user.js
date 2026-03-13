@@ -136,6 +136,35 @@
             }, 15000);
 
             setInterval(findElements, 2000);
+
+            // --- RESULT TRACKER ---
+            let lastAttemptedCode = null;
+            const observer = new MutationObserver((mutations) => {
+                for (const mutation of mutations) {
+                    for (const node of mutation.addedNodes) {
+                        if (node.nodeType === 1) {
+                            const text = node.innerText || "";
+                            if (text.includes("successfully") || text.includes("redeemed") || text.includes("claimed") || text.includes("invalid") || text.includes("wager")) {
+                                if (lastAttemptedCode) {
+                                    let status = "Unknown";
+                                    if (text.includes("successfully")) status = "Success";
+                                    else if (text.includes("already")) status = "Already Claimed";
+                                    else if (text.includes("invalid")) status = "Invalid Code";
+                                    else if (text.includes("wager") || text.includes("requirement")) status = "Wager Req Not Met";
+                                    else status = text.substring(0, 30); // Capture snippet
+
+                                    console.log(`📊 Claim Result for [${lastAttemptedCode}]: ${status}`);
+                                    socket.send(JSON.stringify({ type: 'CLAIM_RESULT', code: lastAttemptedCode, status: status, timestamp: Date.now() }));
+                                    lastAttemptedCode = null; // Clear to prevent double logging
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+
+            window._vanguard_last_code = (c) => { lastAttemptedCode = c; };
         };
 
         socket.onmessage = (event) => {
@@ -170,6 +199,8 @@
 
         promoInput.value = code;
         promoInput.dispatchEvent(new Event('input', { bubbles: true }));
+        if (typeof window._vanguard_last_code === 'function') window._vanguard_last_code(code);
+        
         if (AUTO_SUBMIT) {
             claimButton.click();
             showSplash(`AUTO-CLAIMED: ${code}`);
