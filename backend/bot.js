@@ -67,8 +67,8 @@ if (bot) {
         const recent = await db.getRecentClaims(10);
         let claimText = recent.map(c => `🔹 \`${c.code}\` (${c.source})`).join('\n') || "_No codes detected in the last 24h._";
 
-        const isBrowserConnected = state.clients.size > 0;
-        const statusEmoji = isBrowserConnected ? "🟢 ACTIVE" : "🔴 STANDBY";
+        const engineActive = state.isEngineActive();
+        const statusEmoji = engineActive ? "🟢 ACTIVE" : "🔴 STANDBY";
 
         ctx.replyWithMarkdown(
             `🛰️ *VANGUARD HUB STATUS*\n` +
