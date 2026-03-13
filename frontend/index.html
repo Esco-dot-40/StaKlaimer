@@ -176,13 +176,11 @@
     <script>
         async function loadHistory() {
             try {
-                // If hosted on Netlify, this points to your Railway URL. 
-                // Using relative /api/history for now assuming same origin.
-                const apiUrl = window.location.hostname === 'localhost' || window.location.hostname.includes('railway.app') 
-                    ? '/api/history' 
-                    : 'https://staklaimer-production.up.railway.app/api/history';
-
-                const res = await fetch(apiUrl);
+                // When hosted on Cloudflare (claim.veroe.fun), point to the Railway backend
+                const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                const backendUrl = isLocal ? '' : 'https://staklaimer-production.up.railway.app';
+                
+                const res = await fetch(`${backendUrl}/api/history`);
                 const claims = await res.json();
                 const container = document.getElementById('history-container');
                 container.innerHTML = '';
