@@ -144,12 +144,16 @@ function isLikelyCode(str) {
     // 3. Reject purely numeric strings (likely amounts or timestamps)
     if (/^\d+$/.test(str)) return false;
 
-    // 4. Heuristic: Reject common sentence words (Title Case or lower case)
-    // Stake codes are typically ALL CAPS or mixed but with numbers.
+    // 4. Heuristic: Reject common sentence words and Usernames
+    // Stake codes are typically ALL CAPS or have specific prefixes.
     const hasNumbers = /\d/.test(str);
     const isAllCaps = str === upperStr;
     const isMixedCase = str !== upperStr && str !== str.toLowerCase();
     
+    // NEW: Reject lowercase alphanumeric (common for usernames like 'bhinds239')
+    const isLowerAlphanumeric = /^[a-z0-9]+$/.test(str) && !isAllCaps;
+    if (isLowerAlphanumeric && str.length < 12) return false;
+
     // If it's a normal English word pattern (Mixed case without numbers), reject
     if (isMixedCase && !hasNumbers && str.length < 15) return false;
 
@@ -158,9 +162,8 @@ function isLikelyCode(str) {
 
     // Stake codes are usually:
     // - ALL CAPS + Numbers (STAKE123)
-    // - Long alphanumeric strings (7+)
     // - Specific prefixes (STAKE-, etc)
-    return isAllCaps || hasNumbers || str.length > 12;
+    return isAllCaps || (hasNumbers && str.length > 8) || str.length > 15;
 }
 
 async function sendToVanguard(code, source, msgId) {

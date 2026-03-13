@@ -79,7 +79,9 @@ wss.on('connection', (ws, req) => {
         try {
             const data = JSON.parse(message);
             if (data.type === 'STATUS_UPDATE') {
-                console.log(`Status from ${userId}: ${data.status}`);
+                if (data.status !== 'AWAKE') {
+                    console.log(`Status from ${userId}: ${data.status}`);
+                }
             } else if (data.type === 'CLAIM_RECEIPT') {
                 console.log(`✅ RECEIPT: Browser [${userId}] confirmed receipt of code: [${data.code}]`);
             }
