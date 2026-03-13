@@ -19,9 +19,8 @@ function init() {
 const clients = new Map();
 
 app.use(express.json());
-app.get('/', (req, res) => res.send('StaKlaimer Vanguard Backend is Online.'));
+app.use(express.static(path.join(__dirname, '../frontend')));
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date() }));
-app.use(express.static('public'));
 
 // --- WebSocket Logic ---
 wss.on('connection', (ws, req) => {
