@@ -72,6 +72,7 @@ async function startScraper() {
         if (!message || !message.text) return;
 
         const chat = await message.getChat();
+        if (!chat) return;
         const channelName = chat.username || chat.title || 'Unknown';
         
         // Check if message is from a target channel

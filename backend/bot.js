@@ -103,7 +103,11 @@ if (bot) {
 const initBot = () => {
     if (bot) {
         bot.launch().catch(err => {
-            console.error('❌ Failed to launch Telegram Bot:', err.message);
+            if (err.description && err.description.includes('Conflict')) {
+                console.warn('⚠️ Bot Conflict: Another instance is already running. This is normal during rolling updates.');
+            } else {
+                console.error('❌ Failed to launch Telegram Bot:', err.message);
+            }
         });
         console.log('🤖 Telegram Bot (Telegraf) is running...');
     }

@@ -39,7 +39,7 @@ async function main() {
         console.log('------------------------------------');
 
     } catch (err) {
-        console.error('❌ CRITICAL STARTUP ERROR:', err.message);
+        console.error('❌ CRITICAL STARTUP ERROR:', err);
         process.exit(1);
     }
 }
