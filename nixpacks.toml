@@ -30,3 +30,7 @@ cmds = [
   "npm install",
   "npx playwright install chromium"
 ]
+
+[variables]
+LD_LIBRARY_PATH = "/nix/var/nix/profiles/default/lib:/run/current-system/sw/lib"
+PLAYWRIGHT_BROWSERS_PATH = "0"

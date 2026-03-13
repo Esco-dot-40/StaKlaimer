@@ -8,12 +8,15 @@ let activePage = null;
 
 async function launchApp() {
     const isHeadless = process.env.HEADLESS !== 'false';
-    console.log(`🌐 [Engine] Ignition Sequence (Headless: ${isHeadless})...`);
+    const isRailway = !!process.env.RAILWAY_ENVIRONMENT;
+    
+    console.log(`🌐 [Engine] Ignition Sequence (Headless: ${isHeadless}, Railway: ${isRailway})...`);
     
     chromium.use(stealth);
 
-    // Force Library Paths for Railway
-    process.env.LD_LIBRARY_PATH = `${process.env.LD_LIBRARY_PATH || ''}:/usr/lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu`;
+    // Dynamic User Data Dir
+    const userDataDir = isRailway ? '/tmp/user_data' : path.join(process.cwd(), 'user_data');
+    if (!fs.existsSync(userDataDir)) fs.mkdirSync(userDataDir, { recursive: true });
 
     try {
         const browser = await chromium.launch({
@@ -23,11 +26,20 @@ async function launchApp() {
                 '--disable-setuid-sandbox',
                 '--disable-gpu',
                 '--disable-dev-shm-usage',
-                '--single-process'
-            ]
+                '--disable-software-rasterizer',
+                '--mute-audio',
+                '--no-first-run',
+                '--no-zygote',
+                isRailway ? '--single-process' : ''
+            ].filter(Boolean)
         });
 
-        const page = await browser.newPage();
+        const context = await browser.newContext({
+            viewport: { width: 1280, height: 720 },
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        });
+
+        const page = await context.newPage();
         activePage = page;
         
         const claimerPath = path.join(__dirname, '../shared/claimer.user.js');
@@ -48,12 +60,17 @@ async function launchApp() {
         });
 
         const targetUrl = 'https://stake.com/?tab=offers&modal=redeemBonus';
-        await page.goto(targetUrl, { waitUntil: 'load', timeout: 60000 });
+        console.log(`📡 [Engine] Navigating to ${targetUrl}...`);
+        
+        await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 90000 });
         
         console.log('🛡️ [Engine] VANGUARD ONLINE');
 
     } catch (err) {
         console.error('❌ [Engine] CRITICAL FAILURE:', err.message);
+        if (err.message.includes('executable')) {
+            console.error('💡 TIP: Playwright browser might be missing. Ensure the build command ran correctly.');
+        }
         throw err;
     }
 }
@@ -63,6 +80,7 @@ async function takeScreenshot() {
     try {
         return await activePage.screenshot({ type: 'png' });
     } catch (e) {
+        console.error('Screenshot error:', e.message);
         return null;
     }
 }
