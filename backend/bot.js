@@ -136,7 +136,9 @@ if (bot) {
             await launcher.launchApp();
             ctx.reply("✅ *Engine Initialized.* Check /screen in 10 seconds to see if you are logged in.");
         } catch (e) {
-            ctx.reply(`❌ *Ignition Failed:* ${e.message}`);
+            // Truncate long error messages (Playwright logs can be huge)
+            const cleanError = e.message.length > 500 ? e.message.substring(0, 500) + "..." : e.message;
+            ctx.reply(`❌ *Ignition Failed:* ${cleanError}`);
         }
     });
 
