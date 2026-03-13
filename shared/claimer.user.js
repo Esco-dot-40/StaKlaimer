@@ -43,9 +43,39 @@
     const injectStyles = () => {
         const style = document.createElement('style');
         style.textContent = `
-            @keyframes v-pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 231, 1, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(0, 231, 1, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 231, 1, 0); } }
-            @keyframes v-slide { from { transform: translateX(100%) scale(0.9); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
+            @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Outfit:wght@300;600;800&display=swap');
+            
+            .v-dashboard { 
+                position: fixed; top: 20px; right: 20px; width: 320px;
+                background: linear-gradient(165deg, rgba(8, 12, 20, 0.98), rgba(0, 5, 10, 0.99));
+                backdrop-filter: blur(25px); border: 1px solid rgba(0, 231, 1, 0.15);
+                border-radius: 20px; padding: 0; color: #e2e8f0; z-index: 999999;
+                font-family: 'Outfit', sans-serif; box-shadow: 0 20px 80px rgba(0, 0, 0, 0.6);
+                transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+                overflow: hidden; border-top: 2px solid #00e701;
+            }
+            .v-header { 
+                padding: 18px 20px; background: rgba(255, 255, 255, 0.02);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                display: flex; align-items: center; justify-content: space-between;
+            }
+            .v-logo { font-family: 'Orbitron', sans-serif; font-size: 14px; color: #00e701; letter-spacing: 2px; font-weight: 700; }
+            .v-content { padding: 15px 20px; display: flex; flex-direction: column; gap: 15px; }
+            .v-metric { display: flex; align-items: center; gap: 12px; }
+            .v-metric-label { font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+            .v-metric-value { font-size: 13px; color: #f1f5f9; font-weight: 600; }
+            .v-status-dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 10px currentColor; }
+            
+            .v-history { margin-top: 10px; max-height: 200px; overflow-y: auto; }
+            .v-history-item { 
+                padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+                display: flex; align-items: flex-start; justify-content: space-between;
+            }
+            .v-history-code { font-family: monospace; font-size: 12px; color: #94a3b8; }
+            .v-history-status { font-size: 10px; padding: 2px 8px; border-radius: 100px; font-weight: 700; }
+            
             .v-splash { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #00e701; color: black; padding: 12px 24px; border-radius: 12px; font-family: 'Outfit', sans-serif; font-weight: 800; z-index: 1000000; box-shadow: 0 10px 40px rgba(0, 231, 1, 0.4); font-size: 16px; display: flex; align-items: center; gap: 10px; animation: v-slide 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
+            @keyframes v-slide { from { transform: translateX(100%) scale(0.9); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
         `;
         document.head.appendChild(style);
     };
@@ -59,36 +89,69 @@
         setTimeout(() => splash.remove(), 3000);
     };
 
+    const updateHistory = (code, status) => {
+        const historyList = document.getElementById('v-history-list');
+        if (!historyList) return;
+        
+        const item = document.createElement('div');
+        item.className = 'v-history-item';
+        const color = status.includes('Success') ? '#00e701' : '#f43f5e';
+        const bg = status.includes('Success') ? 'rgba(0, 231, 1, 0.1)' : 'rgba(244, 63, 94, 0.1)';
+        
+        item.innerHTML = `
+            <span class="v-history-code">${code}</span>
+            <span class="v-history-status" style="color: ${color}; background: ${bg};">${status}</span>
+        `;
+        
+        historyList.prepend(item);
+        if (historyList.children.length > 5) historyList.lastChild.remove();
+    };
+
     const createHUD = () => {
         if (hudElement) return;
         hudElement = document.createElement('div');
-        hudElement.style = `position: fixed; bottom: 20px; right: 20px; background: rgba(10, 15, 25, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 10px 18px; color: white; z-index: 999999; font-family: sans-serif; box-shadow: 0 8px 32px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 12px; transition: all 0.3s; border-left: 4px solid #334155;`;
+        hudElement.className = 'v-dashboard';
         hudElement.innerHTML = `
-            <div id="v-dot" style="width: 10px; height: 10px; background: #64748b; border-radius: 50%;"></div>
-            <div style="display: flex; flex-direction: column; gap: 2px;">
-                <span style="font-size: 9px; font-weight: 800; color: #475569; letter-spacing: 1px;">VANGUARD PRIME</span>
-                <span id="v-status" style="font-size: 12px; font-weight: 600; color: #94a3b8;">SEARCHING SERVER...</span>
+            <div class="v-header">
+                <span class="v-logo">VANGUARD OS</span>
+                <div id="v-main-dot" class="v-status-dot" style="color: #64748b; background: #64748b;"></div>
+            </div>
+            <div class="v-content">
+                <div class="v-metric">
+                    <div style="flex: 1;">
+                        <div class="v-metric-label">Connection</div>
+                        <div id="v-status" class="v-metric-value">SEARCHING...</div>
+                    </div>
+                    <div>
+                        <div class="v-metric-label">Solo Engine</div>
+                        <div class="v-metric-value" style="color: #00e701;">🟢 ACTIVE</div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="v-metric-label" style="margin-bottom: 8px;">Claim Session Logs</div>
+                    <div id="v-history-list" class="v-history">
+                        <div style="font-size: 11px; color: #475569; text-align: center; padding: 10px;">Waiting for packet ingestion...</div>
+                    </div>
+                </div>
+
+                <div style="padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                    <div class="v-metric-label" style="margin-bottom: 4px;">Security Layer</div>
+                    <div style="font-size: 11px; color: #94a3b8;">✅ Stealth Anti-Throttling Injected</div>
+                </div>
             </div>
         `;
         document.body.appendChild(hudElement);
     };
 
-    const updateHUD = (status, color, active = false) => {
-        if (!hudElement) createHUD();
-        const dot = document.getElementById('v-dot');
-        const text = document.getElementById('v-status');
-        const hud = hudElement;
-
-        text.innerText = status.toUpperCase();
-        text.style.color = color;
-        dot.style.background = color;
-        hud.style.borderLeftColor = color;
-        
-        if (active) {
-            dot.style.animation = 'v-pulse 2s infinite';
-            hud.style.boxShadow = `0 8px 32px rgba(0, 0, 0, 0.4), 0 0 15px ${color}22`;
-        } else {
-            dot.style.animation = 'none';
+    const updateHUD = (text, color, active = false) => {
+        const statusText = document.getElementById('v-status');
+        const mainDot = document.getElementById('v-main-dot');
+        if (statusText) statusText.innerText = text.toUpperCase();
+        if (mainDot) {
+            mainDot.style.color = color;
+            mainDot.style.background = color;
+            if (active) mainDot.style.animation = 'v-pulse 2s infinite';
         }
     };
 
@@ -155,6 +218,7 @@
 
                                     console.log(`📊 Claim Result for [${lastAttemptedCode}]: ${status}`);
                                     socket.send(JSON.stringify({ type: 'CLAIM_RESULT', code: lastAttemptedCode, status: status, timestamp: Date.now() }));
+                                    updateHistory(lastAttemptedCode, status);
                                     lastAttemptedCode = null; // Clear to prevent double logging
                                 }
                             }
