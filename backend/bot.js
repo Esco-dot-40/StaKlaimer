@@ -1,3 +1,6 @@
+require('dotenv').config();
+const { Telegraf, Markup } = require('telegraf');
+
 // Capture logs for the /logs command
 const logBuffer = [];
 const originalLog = console.log;
@@ -15,7 +18,6 @@ console.error = (...args) => {
     originalError.apply(console, args);
 };
 
-// ... existing imports ...
 const db = require('./db');
 const state = require('./state');
 const launcher = require('./launcher');
