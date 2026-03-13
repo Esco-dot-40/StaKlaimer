@@ -6,6 +6,7 @@ const TelegramBot = require('node-telegram-bot-api');
 const path = require('path');
 const db = require('./db');
 const payments = require('./payments');
+const geoMiddleware = require('./geoMiddleware');
 
 const app = express();
 const server = http.createServer(app);
@@ -19,6 +20,28 @@ function init() {
 const clients = new Map();
 
 app.use(express.json());
+
+    // Geoblocking & Analytics Logging Middleware
+    app.use(async (req, res, next) => {
+        await geoMiddleware(req, res, async () => {
+            // Log analytics even if blocked (geoMiddleware calls next() if not blocked)
+            // But we can log here for ALL attempts
+            const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim().replace(/^.*:/, '');
+            const ua = req.headers['user-agent'] || 'Unknown';
+            const geo = req.geo || {};
+            
+            await db.logConnection({
+                ip,
+                country: geo.country || 'Unknown',
+                countryCode: geo.countryCode || '??',
+                city: geo.city || 'Unknown',
+                ua,
+                isProxy: !!(geo.proxy || geo.hosting)
+            });
+            next();
+        });
+    });
+
 app.use(express.static(path.join(__dirname, '../frontend')));
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date() }));
 

@@ -38,13 +38,27 @@ const init = async () => {
             claimed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `;
+    const visitorTable = `
+        CREATE TABLE IF NOT EXISTS visitor_logs (
+            id SERIAL PRIMARY KEY,
+            ip TEXT,
+            country TEXT,
+            country_code TEXT,
+            city TEXT,
+            ua TEXT,
+            is_proxy BOOLEAN,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    `;
 
     if (isPostgres) {
         await pool.query(userTable);
         await pool.query(claimTable);
+        await pool.query(visitorTable);
     } else {
         sqliteDb.prepare(userTable.replace('BIGINT', 'INTEGER').replace('SERIAL', 'INTEGER AUTOINCREMENT').replace('TIMESTAMP', 'DATETIME')).run();
         sqliteDb.prepare(claimTable.replace('SERIAL', 'INTEGER AUTOINCREMENT').replace('TIMESTAMP', 'DATETIME')).run();
+        sqliteDb.prepare(visitorTable.replace('SERIAL', 'INTEGER AUTOINCREMENT').replace('TIMESTAMP', 'DATETIME')).run();
     }
 };
 
@@ -82,5 +96,17 @@ module.exports = {
             return res.rows;
         }
         return sqliteDb.prepare('SELECT * FROM claims ORDER BY claimed_at DESC LIMIT ?').all(limit);
+    },
+    logConnection: async (data) => {
+        const { ip, country, countryCode, city, ua, isProxy } = data;
+        if (isPostgres) {
+            return pool.query(
+                'INSERT INTO visitor_logs (ip, country, country_code, city, ua, is_proxy) VALUES ($1, $2, $3, $4, $5, $6)',
+                [ip, country, countryCode, city, ua, isProxy]
+            );
+        }
+        return sqliteDb.prepare(
+            'INSERT INTO visitor_logs (ip, country, country_code, city, ua, is_proxy) VALUES (?, ?, ?, ?, ?, ?)'
+        ).run(ip, country, countryCode, city, ua, isProxy ? 1 : 0);
     }
 };
