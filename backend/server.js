@@ -50,13 +50,22 @@ app.get('/claimer.user.js', (req, res) => {
 wss.on('connection', (ws, req) => {
     const urlParams = new URLSearchParams(req.url.split('?')[1]);
     const userId = urlParams.get('userId') || 'anonymous';
+    const type = urlParams.get('type') || 'browser';
     
-    console.log(`New client connected: ${userId}`);
-    clients.set(userId, ws);
+    console.log(`New ${type} connected: ${userId}`);
+    
+    if (type === 'browser') {
+        clients.set(userId, ws);
+    } else {
+        // Monitor clients (Dashboard)
+        ws.isMonitor = true;
+    }
 
     ws.on('close', () => {
-        clients.delete(userId);
-        console.log(`Client disconnected: ${userId}`);
+        if (type === 'browser') {
+            clients.delete(userId);
+        }
+        console.log(`${type} disconnected: ${userId}`);
     });
 
     // Send a heartbeat to keep connection alive
@@ -108,6 +117,18 @@ app.post('/api/new-code', async (req, res) => {
     });
 
     console.log(`Broadcasting to ${activeCount} browser clients via WS`);
+
+    // Broadcast to all Monitor clients (for the real-time Dashboard)
+    const dashboardPayload = JSON.stringify({
+        type: 'LOG_EVENT',
+        data: { code, source, type: type || 'auto-scrape', timestamp: Date.now() }
+    });
+
+    wss.clients.forEach((client) => {
+        if (client.isMonitor && client.readyState === WebSocket.OPEN) {
+            client.send(dashboardPayload);
+        }
+    });
 
     res.json({ success: true, clientsNotified: activeCount });
 });

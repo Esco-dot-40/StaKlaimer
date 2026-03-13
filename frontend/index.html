@@ -3,154 +3,299 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stake Stealth Claimer | #1 Auto-Claim Bot</title>
-    
-    <!-- Premium SEO & Rich Embeds -->
-    <meta name="description" content="The ultimate Stake auto-claim engine. Claim reloads, drops, and bonuses in sub-0.5ms with our stealth Phantom injection technology.">
-    <meta name="keywords" content="stake bot, stake auto claimer, crypto casino bot, automated bonus claimer">
-    
-    <!-- OpenGraph / Facebook / Telegram -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://veroe.space/"> <!-- Replace with your actual domain if different -->
-    <meta property="og:title" content="Stake Stealth Claimer | Phantom V2.4">
-    <meta property="og:description" content="Claim bonuses in less than 0.5ms. 100% automated, zero bans, and fully stealth.">
-    <meta property="og:image" content="/preview.png">
-
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:title" content="Stake Stealth Claimer | Phantom V2.4">
-    <meta property="twitter:description" content="Claim bonuses in less than 0.5ms. 100% automated, zero bans, and fully stealth.">
-    <meta property="twitter:image" content="/preview.png">
-
+    <title>Vanguard Console | Solo Mode Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #00e701;
-            --bg: #0f172a;
-            --card: #1e293b;
-            --text: #f8fafc;
-            --accent: #334155;
+            --bg: #030712;
+            --card: rgba(17, 24, 39, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+            --glow: rgba(0, 231, 1, 0.15);
         }
 
         body {
             font-family: 'Outfit', sans-serif;
             background-color: var(--bg);
-            color: var(--text);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 231, 1, 0.05) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(0, 231, 1, 0.05) 0%, transparent 20%);
+            color: #f8fafc;
             margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            overflow-x: hidden;
+            padding: 24px;
+            min-height: 100vh;
         }
 
-        .hero {
-            height: 100vh;
+        .header {
             display: flex;
-            flex-direction: column;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            text-align: center;
-            padding: 20px;
-            background: radial-gradient(circle at top right, #00e70115, transparent);
+            max-width: 1400px;
+            margin: 0 auto 40px;
         }
 
-        h1 {
-            font-size: clamp(2.5rem, 8vw, 5rem);
+        .logo {
             font-weight: 800;
-            margin: 0;
-            line-height: 1;
-            letter-spacing: -2px;
+            font-size: 1.5rem;
+            letter-spacing: -1px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
-        .gradient-text {
-            background: linear-gradient(90deg, #00e701, #00ff88);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .logo-box {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            border-radius: 8px;
+            box-shadow: 0 0 15px var(--primary);
         }
 
-        p.subtitle {
-            font-size: 1.25rem;
-            color: #94a3b8;
-            max-width: 600px;
-            margin: 24px 0;
-        }
-
-        .cta-btn {
-            background-color: var(--primary);
-            color: #000;
-            padding: 16px 32px;
-            border-radius: 12px;
+        .status-badge {
+            background: rgba(0, 231, 1, 0.1);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 6px 16px;
+            border-radius: 100px;
+            font-size: 0.85rem;
             font-weight: 600;
-            text-decoration: none;
-            font-size: 1.1rem;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 0 20px #00e70133;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .cta-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 30px #00e70155;
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--primary);
+            animation: pulse 2s infinite;
         }
 
-        .features {
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 24px;
-            max-width: 1200px;
-            padding: 40px 20px;
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
-        .feature-card {
+        .card {
             background: var(--card);
-            padding: 32px;
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
             border-radius: 24px;
-            border: 1px solid var(--accent);
-            transition: border-color 0.3s;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
         }
 
-        .feature-card:hover {
-            border-color: var(--primary);
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
         }
 
-        .feature-card h3 {
-            margin-top: 0;
-            color: var(--primary);
-        }
-
-        .badge {
-            background: #00e70122;
-            color: var(--primary);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
+        .card-title {
+            color: #94a3b8;
+            font-size: 0.9rem;
             font-weight: 600;
-            margin-bottom: 12px;
-            display: inline-block;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+        }
+
+        .log-container {
+            grid-column: span 2;
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .log-feed {
+            flex: 1;
+            overflow-y: auto;
+            font-family: 'monospace';
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            padding-right: 8px;
+        }
+
+        .log-entry {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .log-code {
+            color: var(--primary);
+            font-weight: 600;
+            background: rgba(0, 231, 1, 0.05);
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .log-source {
+            color: #64748b;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .quick-action {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            padding: 16px;
+            border-radius: 16px;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s;
+        }
+
+        .quick-action:hover {
+            background: rgba(255,255,255,0.07);
+            border-color: rgba(255,255,255,0.2);
+            transform: translateX(4px);
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
     </style>
 </head>
 <body>
-    <section class="hero">
-        <div class="badge">V2.4 LATEST RELEASE</div>
-        <h1>The Ultimate <span class="gradient-text">Stake</span><br>Auto-Claim Engine</h1>
-        <p class="subtitle">Claim bonuses, reloads, and drops in less than 0.5ms. Fully stealth, zero bans, and 100% automated.</p>
-        <a href="https://t.me/AutoEnhancd" class="cta-btn">Join AutoEnhancd</a>
-    </section>
+    <header class="header">
+        <div class="logo">
+            <div class="logo-box"></div>
+            VANGUARD CONSOLE
+        </div>
+        <div class="status-badge" id="service-status">
+            <div class="status-dot"></div>
+            SOLO ENGINE ACTIVE
+        </div>
+    </header>
 
-    <section class="features">
-        <div class="feature-card">
-            <h3>⚡ Sub-Millisecond Speed</h3>
-            <p>Our Phantom injection engine caches DOM elements to ensure codes are submitted the microsecond they are received.</p>
+    <main class="grid">
+        <div class="card log-container">
+            <div class="card-title">Real-Time Ingestion Feed</div>
+            <div class="log-feed" id="log-feed">
+                <!-- Logs will appear here -->
+                <div class="log-entry">
+                    <span>System initialized. Monitoring 24 channels...</span>
+                    <span class="log-source">SYSTEM</span>
+                </div>
+            </div>
         </div>
-        <div class="feature-card">
-            <h3>🎭 Undetectable Stealth</h3>
-            <p>Runs in a real browser session (not headless). Mimics human input events to bypass anti-bot heuristics.</p>
+
+        <div class="sidebar">
+            <div class="card">
+                <div class="card-title">Total Claims</div>
+                <div class="stat-value" id="stats-claims">0</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Active Nodes</div>
+                <div class="stat-value" id="stats-nodes">1</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Quick Actions</div>
+                <a href="https://t.me/EnhancerAutomateBot" class="quick-action" target="_blank">
+                    <span>🤖</span>
+                    Open Telegram Bot
+                </a>
+                <a href="#" class="quick-action" onclick="testCode()">
+                    <span>🧪</span>
+                    Trigger Test Drop
+                </a>
+            </div>
         </div>
-        <div class="feature-card">
-            <h3>📡 Vanguard Network</h3>
-            <p>Listen to hundreds of Telegram, Kick, and X channels simultaneously via our distributed scraper network.</p>
-        </div>
-    </section>
+    </main>
+
+    <script>
+        const logFeed = document.getElementById('log-feed');
+        const claimsStat = document.getElementById('stats-claims');
+        let claimCount = 0;
+
+        // WebSocket Connection for Dashboard
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const socket = new WebSocket(`${protocol}//${window.location.host}?userId=dashboard&type=monitor`);
+
+        socket.onmessage = (event) => {
+            const payload = JSON.parse(event.data);
+            if (payload.type === 'LOG_EVENT') {
+                const { code, source, timestamp } = payload.data;
+                addLogEntry(code, source, timestamp);
+                claimCount++;
+                claimsStat.innerText = claimCount;
+            }
+        };
+
+        socket.onopen = () => {
+            console.log('Vanguard Console Connected');
+        };
+
+        socket.onclose = () => {
+            document.getElementById('service-status').innerHTML = '<div class="status-dot" style="background: #ef4444; box-shadow: 0 0 10px #ef4444;"></div> ENGINE OFFLINE';
+            document.getElementById('service-status').style.borderColor = '#ef4444';
+            document.getElementById('service-status').style.color = '#ef4444';
+        };
+
+        function addLogEntry(code, source, timestamp) {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            const timeStr = new Date(timestamp).toLocaleTimeString();
+            
+            entry.innerHTML = `
+                <div>
+                    <span class="log-code">${code}</span>
+                    <span style="margin-left: 10px; color: #64748b;">detected at ${timeStr}</span>
+                </div>
+                <span class="log-source">${source}</span>
+            `;
+            
+            logFeed.prepend(entry);
+            if (logFeed.children.length > 50) {
+                logFeed.lastElementChild.remove();
+            }
+        }
+
+        async function testCode() {
+            const testCode = 'TEST-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+            await fetch('/api/new-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: testCode, source: 'Dashboard Manual', type: 'test' })
+            });
+        }
+    </script>
 </body>
 </html>
