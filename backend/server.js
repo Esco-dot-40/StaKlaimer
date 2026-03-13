@@ -39,8 +39,8 @@ app.get('/claimer.user.js', (req, res) => {
     const wsUrl = `${protocol}://${baseUrl}`;
     
     content = content.replace(
-        "const WS_URL = window.PHANTOM_INTERNAL_SERVER || 'ws://localhost:3000?userId=vanguard_local';",
-        `const WS_URL = window.PHANTOM_INTERNAL_SERVER || '${wsUrl}?userId=vanguard_user';`
+        "const WS_URL = window.PHANTOM_INTERNAL_SERVER || 'ws://staklaimer-production.up.railway.app?userId=vanguard_user&type=browser';",
+        `const WS_URL = window.PHANTOM_INTERNAL_SERVER || '${wsUrl}?userId=vanguard_user&type=browser';`
     );
     
     res.type('application/javascript').send(content);
