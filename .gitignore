@@ -1,0 +1,7 @@
+node_modules/
+user_data/
+data.db
+.env
+*.exe
+*.log
+.DS_Store

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Stake Mock Test Environment</title>
+    <style>
+        body { background: #0f172a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+        .promo-container { background: #1e293b; padding: 40px; border-radius: 12px; border: 1px solid #334155; }
+        input { padding: 12px; border-radius: 4px; border: 1px solid #475569; background: #0f172a; color: white; width: 300px; margin-bottom: 20px; }
+        button { padding: 12px 24px; background: #00e701; color: black; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        #log { margin-top: 20px; color: #94a3b8; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>Stake Mock UI</h1>
+    <div class="promo-container">
+        <input type="text" name="code" placeholder="Enter Promo Code" id="promo-input">
+        <br>
+        <button type="submit" id="claim-button">Redeem Bonus</button>
+    </div>
+    <div id="log">Waiting for codes...</div>
+
+    <script>
+        const btn = document.getElementById('claim-button');
+        const input = document.getElementById('promo-input');
+        const log = document.getElementById('log');
+
+        btn.onclick = () => {
+            const val = input.value;
+            log.innerHTML += `<div>✅ [${new Date().toLocaleTimeString()}] Claimed Code: <b>${val}</b></div>`;
+            input.value = '';
+        };
+    </script>
+</body>
+</html>
