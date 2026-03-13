@@ -58,6 +58,18 @@ if (bot) {
         );
     });
 
+    bot.command('setup', (ctx) => {
+        const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+        ctx.replyWithMarkdown(
+            `🛠️ *Vanguard Setup*\n\n` +
+            `To connect your personal browser, follow these steps:\n\n` +
+            `1. Install [Tampermonkey](https://www.tampermonkey.net/) extension.\n` +
+            `2. Click this link to install your personalized script:\n` +
+            `👉 [Install Vanguard Claimer Mode](${baseUrl}/claimer.user.js)\n\n` +
+            `Once installed, navigate to [Stake.com](https://stake.com/?tab=offers&modal=redeemBonus) and the status will turn green!`
+        );
+    });
+
     bot.command('test', async (ctx) => {
         const testCode = "TEST-CODE-" + Math.floor(Math.random() * 1000);
         ctx.replyWithMarkdown(`🧪 *Triggering Test Code:* \`${testCode}\`...\nCheck your Railway logs or browser console to see the injection!`);

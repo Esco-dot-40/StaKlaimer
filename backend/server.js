@@ -3,6 +3,7 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
+const fs = require('fs');
 const db = require('./db');
 const payments = require('./payments');
 const state = require('./state');
@@ -21,6 +22,23 @@ const clients = state.clients;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date() }));
+
+// Serving the userscript with dynamic BASE_URL for easy installation
+app.get('/claimer.user.js', (req, res) => {
+    const filePath = path.join(__dirname, '../shared/claimer.user.js');
+    let content = fs.readFileSync(filePath, 'utf8');
+    
+    // Inject the real server URL into the script automatically
+    const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+    const wsUrl = baseUrl.replace('http', 'ws');
+    
+    content = content.replace(
+        "const WS_URL = window.PHANTOM_INTERNAL_SERVER || 'ws://localhost:3000?userId=vanguard_local';",
+        `const WS_URL = window.PHANTOM_INTERNAL_SERVER || '${wsUrl}?userId=vanguard_user';`
+    );
+    
+    res.type('application/javascript').send(content);
+});
 
 // --- WebSocket Logic ---
 wss.on('connection', (ws, req) => {
