@@ -112,6 +112,16 @@ if (bot) {
 
     bot.command('ping', (ctx) => ctx.reply('🏓 Pong! Bot is alive and well.'));
 
+    bot.command('boot', async (ctx) => {
+        ctx.reply("⚙️ *Starting Solo Engine...*");
+        try {
+            await launcher.launchApp();
+            ctx.reply("✅ *Solo Engine Started!* Use /status to verify.");
+        } catch (e) {
+            ctx.reply(`❌ *Engine Failed:* ${e.message}`);
+        }
+    });
+
     bot.command('screen', async (ctx) => {
         ctx.reply("📸 *Capturing Live View...* Please wait.");
         try {
@@ -133,6 +143,7 @@ const initBot = () => {
         bot.telegram.setMyCommands([
             { command: 'status', description: 'Monitor live connection & recent claims' },
             { command: 'screen', description: 'View real-time Stake browser feed' },
+            { command: 'boot', description: 'Manually start/restart the browser engine' },
             { command: 'connect', description: 'Check engine sync status' },
             { command: 'test', description: 'Simulate a code drop to verify system' },
             { command: 'ping', description: 'Check bot heartbeat' }

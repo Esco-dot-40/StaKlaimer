@@ -28,9 +28,10 @@ async function main() {
         }
 
         // 5. Start Automated Phantom Browser (The "Headless" Claimer)
-        if (process.env.ENABLE_AUTOMATED_CLAIMER === 'true') {
+        // Defaults to true unless explicitly 'false'
+        if (process.env.ENABLE_AUTOMATED_CLAIMER !== 'false') {
             launcher.launchApp().catch(err => {
-                console.error('❌ Failed to launch browser:', err);
+                console.error('❌ Failed to launch browser (Solo Mode):', err);
             });
         }
 
