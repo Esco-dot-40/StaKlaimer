@@ -12,8 +12,9 @@ async function launchApp() {
     
     chromium.use(stealth);
 
-    const userDataDir = path.join(process.cwd(), 'user_data');
-    if (!fs.existsSync(userDataDir)) fs.mkdirSync(userDataDir);
+    // Use /tmp for user data to avoid permission issues on Railway
+    const userDataDir = process.env.RAILWAY_ENVIRONMENT ? '/tmp/user_data' : path.join(process.cwd(), 'user_data');
+    if (!fs.existsSync(userDataDir)) fs.mkdirSync(userDataDir, { recursive: true });
 
     try {
         const browser = await chromium.launchPersistentContext(userDataDir, {
