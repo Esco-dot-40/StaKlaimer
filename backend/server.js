@@ -3,9 +3,9 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const TelegramBot = require('node-telegram-bot-api');
-const path = require('path');
 const db = require('./db');
 const payments = require('./payments');
+const state = require('./state');
 
 const app = express();
 const server = http.createServer(app);
@@ -15,8 +15,8 @@ const PORT = process.env.PORT || 3000;
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 
 function init() {
-// In-memory store for connected clients (browser instances)
-const clients = new Map();
+// In-memory store for connected clients is now in state.js object
+const clients = state.clients;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend')));

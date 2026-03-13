@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { Telegraf, Markup } = require('telegraf');
 const db = require('./db');
+const state = require('./state');
 
 const token = process.env.TELEGRAM_TOKEN;
 if (!token) {
@@ -47,8 +48,12 @@ if (bot) {
         const recent = await db.getRecentClaims(5);
         let claimText = recent.map(c => `🔹 \`${c.code}\` (${c.source})`).join('\n') || "No recent claims.";
 
+        const isBrowserConnected = state.clients.size > 0;
+        const statusEmoji = isBrowserConnected ? "🟢 Connected" : "🔴 Disconnected";
+
         ctx.replyWithMarkdown(
-            `🛡️ *Vanguard Status: 🟢 Running*\n\n` +
+            `🛡️ *Vanguard Engine:* ${statusEmoji}\n` +
+            `📡 *Active Browsers:* \`${state.clients.size}\`\n\n` +
             `🕒 *Recent Network Claims:*\n${claimText}`
         );
     });
@@ -72,7 +77,12 @@ if (bot) {
     });
 
     bot.command('connect', (ctx) => {
-        ctx.replyWithMarkdown("🔗 *Connecting to Vanguard...*\n\nStatus: `Online`\nSignal: `Strong`\n\nYour browser instance is being monitored.");
+        const isBrowserConnected = state.clients.size > 0;
+        if (isBrowserConnected) {
+            ctx.replyWithMarkdown("✅ *Stake Status: Connected*\n\nYour browser is successfully linked to the Vanguard engine. Scrapers are active and monitoring!");
+        } else {
+            ctx.replyWithMarkdown("⚠️ *Stake Status: Not Found*\n\nI can't see your browser. Please ensure:\n1. Your browser is open at Stake.com\n2. You are on the 'Redeem Bonus' tab.");
+        }
     });
 
     bot.command('ping', (ctx) => ctx.reply('🏓 Pong! Bot is alive and well.'));
