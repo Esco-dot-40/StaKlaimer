@@ -53,6 +53,24 @@ if (bot) {
         );
     });
 
+    bot.command('test', async (ctx) => {
+        const testCode = "TEST-CODE-" + Math.floor(Math.random() * 1000);
+        ctx.replyWithMarkdown(`🧪 *Triggering Test Code:* \`${testCode}\`...\nCheck your Railway logs or browser console to see the injection!`);
+        
+        // Manual trigger via the same API the scraper uses
+        const PORT = process.env.PORT || 3000;
+        try {
+            const axios = require('axios');
+            await axios.post(`http://localhost:${PORT}/api/new-code`, {
+                code: testCode,
+                source: "Manual Test",
+                type: "test"
+            });
+        } catch (e) {
+            console.error('Test trigger failed:', e.message);
+        }
+    });
+
     bot.command('connect', (ctx) => {
         ctx.replyWithMarkdown("🔗 *Connecting to Vanguard...*\n\nStatus: `Online`\nSignal: `Strong`\n\nYour browser instance is being monitored.");
     });
