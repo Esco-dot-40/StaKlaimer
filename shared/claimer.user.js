@@ -7,6 +7,7 @@
 // @match        https://stake.com/*
 // @match        https://stake.bz/*
 // @match        https://stake.jp/*
+// @match        https://stake.us/*
 // @grant        none
 // ==/UserScript==
 
@@ -25,6 +26,9 @@
     // Cache DOM elements for 0.5ms reaction
     // Note: Stake's DOM may vary, these selectors should be verified
     const findElements = () => {
+        const oldInput = promoInput;
+        const oldButton = claimButton;
+
         // Look for common promo input patterns
         promoInput = document.querySelector('input[name="code"]') || 
                      document.querySelector('input[placeholder*="Bonus Code"]') ||
@@ -33,10 +37,18 @@
         
         claimButton = document.querySelector('button[type="submit"]') || 
                       document.evaluate("//button[contains(., 'Redeem')]", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue ||
-                      document.querySelector('button.variant-primary');
+                      document.querySelector('button.variant-primary') ||
+                      document.querySelector('button[data-testid="redeem-button"]');
 
         if (promoInput && claimButton) {
-            console.log('%c[Phantom] Elements Cached - Ready for drop', 'color: #00ff00; font-weight: bold;');
+            if (!oldInput || !oldButton) {
+                console.log('%c[Phantom] SUCCESS: Elements found and cached.', 'color: #00ff00; font-weight: bold; border: 1px solid #00ff00; padding: 2px;');
+            }
+        } else {
+            if (oldInput || oldButton || !window._phantom_nagged) {
+                console.warn('[Phantom] Elements not found. Ensure you are on the "Redeem Bonus" modal or page.');
+                window._phantom_nagged = true;
+            }
         }
     };
 
@@ -77,6 +89,7 @@
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
             if (data.type === 'CLAIM_CODE') {
+                console.log(`%c[Phantom] CODE RECEIVED: ${data.code}`, 'color: #00e701; font-weight: bold;');
                 claim(data.code);
             }
         };

@@ -43,14 +43,22 @@ const init = async () => {
         await pool.query(userTable);
         await pool.query(claimTable);
     } else {
-        sqliteDb.prepare(userTable.replace('BIGINT', 'INTEGER').replace('SERIAL', 'INTEGER AUTOINCREMENT').replace('TIMESTAMP', 'DATETIME')).run();
-        sqliteDb.prepare(claimTable.replace('SERIAL', 'INTEGER AUTOINCREMENT').replace('TIMESTAMP', 'DATETIME')).run();
+        // Correctly handle SQLite autoincrement syntax
+        const sqliteUserTable = userTable
+            .replace('BIGINT PRIMARY KEY', 'INTEGER PRIMARY KEY')
+            .replace('TIMESTAMP', 'DATETIME');
+        
+        const sqliteClaimTable = claimTable
+            .replace('SERIAL PRIMARY KEY', 'INTEGER PRIMARY KEY AUTOINCREMENT')
+            .replace('TIMESTAMP', 'DATETIME');
+
+        sqliteDb.prepare(sqliteUserTable).run();
+        sqliteDb.prepare(sqliteClaimTable).run();
     }
 };
 
-init();
-
 module.exports = {
+    init,
     registerUser: async (tgId, username, stakeUser) => {
         if (isPostgres) {
             return pool.query('INSERT INTO users (telegram_id, username, stake_username) VALUES ($1, $2, $3) ON CONFLICT (telegram_id) DO UPDATE SET username = $2, stake_username = $3', [tgId, username, stakeUser]);

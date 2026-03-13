@@ -43,11 +43,15 @@ if (bot) {
             `🕒 *Recent Network Claims:*\n${claimText}`
         );
     });
-
-    bot.launch().catch(err => {
-        console.error('❌ Failed to launch Telegram Bot:', err.message);
-    });
-    console.log('🤖 Telegram Bot (Telegraf) is running...');
 }
 
-module.exports = bot;
+const initBot = () => {
+    if (bot) {
+        bot.launch().catch(err => {
+            console.error('❌ Failed to launch Telegram Bot:', err.message);
+        });
+        console.log('🤖 Telegram Bot (Telegraf) is running...');
+    }
+};
+
+module.exports = { initBot };

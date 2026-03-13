@@ -4,29 +4,9 @@ const stealth = require('puppeteer-extra-plugin-stealth')();
 const path = require('path');
 const fs = require('fs');
 
-// Import our server logic (modified to work as a module)
-const startServer = () => {
-    const init = require('./server.js');
-    if (typeof init === 'function') {
-        init();
-    }
-};
-
-const startScraper = () => {
-    const scraper = require('../scraper/scraper.js');
-    if (typeof scraper === 'function') {
-        scraper();
-    }
-};
-
 async function launchApp() {
-    console.log('🚀 Starting Stealth Vanguard Backend...');
-    startServer();
-
-    console.log('📡 Starting Telegram Scraper...');
-    startScraper();
-
-    console.log('🌐 Launching Phantom Browser...');
+    const isHeadless = process.env.HEADLESS !== 'false';
+    console.log(`🌐 Launching Phantom Browser (Headless: ${isHeadless})...`);
     
     chromium.use(stealth);
 
@@ -35,15 +15,24 @@ async function launchApp() {
     if (!fs.existsSync(userDataDir)) fs.mkdirSync(userDataDir);
 
     const browser = await chromium.launchPersistentContext(userDataDir, {
-        headless: false, // Set to true if you want it completely invisible
-        viewport: null,
+        headless: isHeadless,
+        viewport: isHeadless ? { width: 1280, height: 720 } : null,
         args: [
             '--start-maximized',
-            '--disable-blink-features=AutomationControlled'
+            '--disable-blink-features=AutomationControlled',
+            '--no-sandbox',
+            '--disable-setuid-sandbox'
         ]
     });
 
     const page = await browser.newPage();
+    
+    // Forward browser console logs to terminal (with noise filtering)
+    page.on('console', msg => {
+        const text = msg.text();
+        if (text.startsWith('%c%d')) return; // Filter Stake anti-tamper noise
+        console.log(`[Browser] ${text}`);
+    });
     
     // Inject the claimer logic directly into the page
     const claimerPath = path.join(__dirname, '../shared/claimer.user.js');
@@ -74,6 +63,10 @@ async function launchApp() {
     console.log('📡 Listening for incoming codes via WebSocket...');
 }
 
-launchApp().catch(err => {
-    console.error('❌ Failed to launch:', err);
-});
+if (require.main === module) {
+    launchApp().catch(err => {
+        console.error('❌ Failed to launch:', err);
+    });
+}
+
+module.exports = { launchApp };

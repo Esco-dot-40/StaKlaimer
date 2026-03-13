@@ -9,6 +9,12 @@ Professional Stake bonus auto-claim suite with Telegram monitoring, stealth brow
 - **Payments Ready**: Integrated with NOWPayments for USDT (BSC/TRON).
 - **Dual DB Support**: SQLite for local testing, Postgres for cloud (Railway).
 
+## ✅ Current Status (Stable)
+- **DB Fixed**: SQLite initialization for local development is now robust.
+- **Launcher Unified**: `backend/launcher.js` and `index.js` now work together without port conflicts.
+- **Stealth Enhanced**: Added noise filtering for browser logs and improved element discovery.
+- **Automated Claimer**: Fully integrated into the server start flow.
+
 ## 📂 Project Structure
 - `/backend`: Node.js Express API + Telegram Bot (Telegraf).
 - `/scraper`: Telegram user-bot scraper (gramjs).
@@ -28,9 +34,16 @@ Professional Stake bonus auto-claim suite with Telegram monitoring, stealth brow
 3. Railway will automatically inject the `DATABASE_URL`.
 4. Add the following Variables to your Railway service:
    - `TELEGRAM_TOKEN`: Your bot token from BotFather.
+   - `TELEGRAM_API_ID` & `TELEGRAM_API_HASH`: From my.telegram.org.
+   - `TELEGRAM_SESSION`: Session string (generated locally).
    - `NOWPAYMENTS_API_KEY`: For SaaS payments.
-   - `NOWPAYMENTS_IPN_SECRET`: For payment verification.
    - `BASE_URL`: Your Railway app URL.
+   - `HEADLESS`: set to `true` (default).
+   - `ENABLE_AUTOMATED_CLAIMER`: set to `false` for SaaS, `true` for Solo.
+
+## 🔍 Diagnostics
+Run `node debug_env.js` locally to check your configuration before pushing.
+If you get a 502 on Railway, check that `HEADLESS` is not set to `false`.
 
 ## 📤 Pushing to Your Repo
 Open a terminal in the root and run:

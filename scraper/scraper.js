@@ -31,14 +31,25 @@ const PROMO_REGEX = /\b[A-Za-z0-9_-]{5,20}\b/g; // Adjust based on Stake code pa
 async function startScraper() {
     console.log("🛠 Starting Scraper Engine...");
     
-    if (!apiId || !apiHash) {
-        console.log("⚠️ TEST MODE: No Telegram API credentials found. Simulating data drops...");
+    if (!apiId || !apiHash || process.env.SKIP_TELEGRAM === 'true') {
+        console.log("⚠️ TEST MODE: Simulating Telegram data drops...");
         setInterval(() => {
             const mockCode = "TEST-" + Math.random().toString(36).substring(2, 7).toUpperCase();
             console.log(`[Mock Scraper] Found code: ${mockCode}`);
-            sendToVanguard(mockCode, "Mock-Channel");
-        }, 10000); // 10 seconds for testing
+            sendToVanguard(mockCode, "Mock-Channel", Math.floor(Math.random() * 10000));
+        }, 15000); // 15 seconds for testing
         return;
+    }
+
+    if (!process.env.TELEGRAM_SESSION) {
+        if (process.stdout.isTTY) {
+            console.log("ℹ️ No TELEGRAM_SESSION found. Starting interactive login to generate one...");
+        } else {
+            console.warn("⚠️ CRITICAL: TELEGRAM_SESSION is missing in .env!");
+            console.warn("⚠️ Scraper cannot start in non-interactive mode (Cloud/CI) without a session string.");
+            console.warn("⚠️ Run locally in a terminal once to generate a session string.");
+            return;
+        }
     }
 
     const client = new TelegramClient(stringSession, apiId, apiHash, {
