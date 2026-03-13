@@ -29,8 +29,14 @@ app.get('/claimer.user.js', (req, res) => {
     let content = fs.readFileSync(filePath, 'utf8');
     
     // Inject the real server URL into the script automatically
-    const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
-    const wsUrl = baseUrl.replace('http', 'ws');
+    let baseUrl = process.env.BASE_URL || `localhost:${PORT}`;
+    
+    // Clean up baseUrl (remove http/https if present to normalize)
+    baseUrl = baseUrl.replace(/^https?:\/\//, '');
+    
+    // In production (Railway), always use wss://. Locally use ws://
+    const protocol = (process.env.BASE_URL && !process.env.BASE_URL.includes('localhost')) ? 'wss' : 'ws';
+    const wsUrl = `${protocol}://${baseUrl}`;
     
     content = content.replace(
         "const WS_URL = window.PHANTOM_INTERNAL_SERVER || 'ws://localhost:3000?userId=vanguard_local';",
