@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
-const TelegramBot = require('node-telegram-bot-api');
+const path = require('path');
 const db = require('./db');
 const payments = require('./payments');
 const state = require('./state');
