@@ -68,31 +68,33 @@ async function startScraper() {
     console.log(client.session.save());
 
     client.addEventHandler(async (event) => {
-        const message = event.message;
-        if (!message || !message.text) return;
+        try {
+            const message = event.message;
+            if (!message || !message.text) return;
 
-        const chat = await message.getChat();
-        if (!chat) return;
-        const channelName = chat.username || chat.title || 'Unknown';
-        
-        // Check if message is from a target channel
-        const isTarget = TARGET_CHANNELS.some(target => 
-            channelName.toLowerCase().includes(target.toLowerCase())
-        );
+            const chat = await message.getChat().catch(() => null);
+            if (!chat) return;
 
-        if (!isTarget) return;
+            const channelName = (chat.username || chat.title || 'Unknown').toString();
+            
+            // Check if message is from a target channel
+            const isTarget = TARGET_CHANNELS.some(target => 
+                channelName.toLowerCase().includes(target.toLowerCase())
+            );
 
-        console.log(`[Message Received] From ${channelName}: ${message.text.substring(0, 50)}...`);
+            if (!isTarget) return;
 
-        // Refined Stake Code Regex (alphanumeric, hashes, usually 8+ chars or specific patterns)
-        const matches = message.text.match(/\b[A-Za-z0-9_-]{7,40}\b/g);
-        if (matches) {
-            for (const code of matches) {
-                if (isLikelyCode(code)) {
-                    console.log(`🚀 Found potential Stake code: [${code}]`);
-                    await sendToVanguard(code, channelName, message.id);
-                }
+            console.log(`[Message Received] From ${channelName}: ${message.text.substring(0, 50)}...`);
+            
+            // Extract code
+            const codeMatch = message.text.match(/[A-Za-z0-9-]{5,}/);
+            if (codeMatch) {
+                const code = codeMatch[0];
+                console.log(`🎯 Potential Code Found: ${code}`);
+                await sendToVanguard(code, channelName, message.id);
             }
+        } catch (handlerErr) {
+            console.error('❌ Scraper Event Error:', handlerErr.message);
         }
     }, new NewMessage({}));
 }
