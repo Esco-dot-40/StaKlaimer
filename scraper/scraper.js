@@ -57,16 +57,42 @@ async function startScraper() {
     }
 
     const client = new TelegramClient(stringSession, apiId, apiHash, {
-        connectionRetries: 5,
+        connectionRetries: 10,
+        retryDelay: 3000,
     });
 
-    await client.start({
-        phoneNumber: async () => await input.text("Please enter your number: "),
-        password: async () => await input.text("Please enter your password: "),
-        phoneCode: async () => await input.text("Please enter the code you received: "),
-        onError: (err) => console.log(err),
-    });
+    const connectWithRetry = async (retryCount = 0) => {
+        try {
+            // Initial randomized delay in production to avoid collisions during rolling updates
+            if (process.env.NODE_ENV === 'production' && retryCount === 0) {
+                const delay = Math.floor(Math.random() * 5000) + 1000;
+                console.log(`⏳ [Scraper] Initialization delay (${delay}ms)...`);
+                await new Promise(r => setTimeout(r, delay));
+            }
 
+            await client.start({
+                phoneNumber: async () => await input.text("Please enter your number: "),
+                password: async () => await input.text("Please enter your password: "),
+                phoneCode: async () => await input.text("Please enter the code you received: "),
+                onError: (err) => {
+                    if (err.message?.includes('AUTH_KEY_DUPLICATED')) {
+                        console.warn("⚠️ AUTH_KEY_DUPLICATED: Another instance is trying to connect. Retrying...");
+                    } else {
+                        console.error('❌ Scraper start error:', err.message);
+                    }
+                },
+            });
+        } catch (err) {
+            if (err.message?.includes('AUTH_KEY_DUPLICATED') && retryCount < 5) {
+                console.warn(`⏳ [Scraper] Connection conflict (Attempt ${retryCount + 1}). Retrying in 5s...`);
+                await new Promise(r => setTimeout(r, 5000));
+                return connectWithRetry(retryCount + 1);
+            }
+            throw err;
+        }
+    };
+
+    await connectWithRetry();
     console.log("✅ Scraper Connected to Telegram!");
     
     // Log joined channels for verification
