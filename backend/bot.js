@@ -68,17 +68,17 @@ if (bot) {
         let claimText = recent.map(c => `🔹 \`${c.code}\` (${c.source})`).join('\n') || "_No codes detected in the last 24h._";
 
         const engineActive = state.isEngineActive();
-        const statusEmoji = engineActive ? "🟢 ACTIVE" : "🔴 STANDBY";
-        const captchaStatus = "✅ FREE STEALTH";
+        const activeUserNodes = Array.from(state.clients.keys()).filter(id => id !== 'vanguard_user').length;
+        const soloEngineStatus = engineActive ? "🟢 ACTIVE" : "🔴 STANDBY";
 
         ctx.replyWithMarkdown(
             `🛰️ *VANGUARD HUB STATUS*\n` +
             `━━━━━━━━━━━━━━━━━━━━\n` +
-            `🖥️ *Engine:* ${statusEmoji}\n` +
-            `📡 *Active Nodes:* \`${state.clients.size}\` (Solo Instance)\n` +
-            `🧩 *Captcha Solver:* ${captchaStatus}\n\n` +
+            `🖥️ *Solo Engine:* ${soloEngineStatus}\n` +
+            `📡 *Active User Nodes:* \`${activeUserNodes}\` Connected\n` +
+            `🧩 *Captcha Solver:* ✅ FREE STEALTH\n\n` +
             `🕒 *Recent Network Activity:*\n${claimText}\n\n` +
-            `💡 _Use /screen to see the live browser feed._`
+            `💡 _Open Stake.com + Vanguard Script to link your own browser._`
         );
     });
 
@@ -124,11 +124,23 @@ if (bot) {
     });
 
     bot.command('connect', (ctx) => {
-        const isBrowserConnected = state.clients.size > 0;
-        if (isBrowserConnected) {
-            ctx.replyWithMarkdown("✅ *Stake Status: Connected*\n\nYour browser is successfully linked to the Vanguard engine. Scrapers are active and monitoring!");
+        const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+        const userNodes = Array.from(state.clients.keys()).filter(id => id !== 'vanguard_user');
+        
+        if (userNodes.length > 0) {
+            ctx.replyWithMarkdown(
+                "✅ *Vanguard: Linked & Ready*\n\n" +
+                `I see \`${userNodes.length}\` browser(s) connected. You are ready to claim codes in real-time!`
+            );
         } else {
-            ctx.replyWithMarkdown("⚠️ *Stake Status: Not Found*\n\nI can't see your browser. Please ensure:\n1. Your browser is open at Stake.com\n2. You are on the 'Redeem Bonus' tab.");
+            ctx.replyWithMarkdown(
+                "⚠️ *Vanguard: No Active Browsers Found*\n\n" +
+                "To get the claimer working right now:\n" +
+                "1. Open **Stake.com** on your PC.\n" +
+                "2. Go to **Settings > Offers > Redeem**.\n" +
+                "3. Ensure the script is installed and shows 'Cloud Linked'.\n\n" +
+                `👉 [Download/Update Script](${baseUrl}/claimer.user.js)`
+            );
         }
     });
 
