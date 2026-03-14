@@ -11,7 +11,7 @@
 // @grant        none
 // ==/UserScript==
 
-(function() {
+(function () {
     'use strict';
 
     const WS_URL = window.PHANTOM_INTERNAL_SERVER || 'ws://staklaimer-production.up.railway.app?userId=vanguard_user&type=browser';
@@ -28,7 +28,7 @@
         // High-Priority Audio Hack: Browsers won't throttle tabs playing audio
         const audio = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
         audio.loop = true;
-        
+
         const stayAwake = () => {
             audio.play().catch(() => {
                 // Wait for user interaction if blocked
@@ -92,17 +92,17 @@
     const updateHistory = (code, status) => {
         const historyList = document.getElementById('v-history-list');
         if (!historyList) return;
-        
+
         const item = document.createElement('div');
         item.className = 'v-history-item';
         const color = status.includes('Success') ? '#00e701' : '#f43f5e';
         const bg = status.includes('Success') ? 'rgba(0, 231, 1, 0.1)' : 'rgba(244, 63, 94, 0.1)';
-        
+
         item.innerHTML = `
             <span class="v-history-code">${code}</span>
             <span class="v-history-status" style="color: ${color}; background: ${bg};">${status}</span>
         `;
-        
+
         historyList.prepend(item);
         if (historyList.children.length > 5) historyList.lastChild.remove();
     };
@@ -157,15 +157,53 @@
 
     // --- LOGIC ENGINE ---
     const findElements = () => {
-        promoInput = document.querySelector('input[name="code"]') || 
-                     document.querySelector('input[placeholder*="Code"]') ||
-                     document.querySelector('input[placeholder*="Promo"]') ||
-                     document.querySelector('input[type="text"]'); // Fallback
-                     
-        claimButton = document.querySelector('button[type="submit"]') || 
-                      document.querySelector('button.variant-primary') ||
-                      document.querySelector('button[data-testid="redeem-button"]') ||
-                      document.evaluate("//button[contains(., 'Redeem')]", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+        // 1. Gather all potential inputs
+        const inputs = Array.from(document.querySelectorAll('input[name="code"], input[placeholder*="Code"], input[placeholder*="Promo"], input[data-testid*="code"]'));
+        
+        if (inputs.length === 0) {
+            inputs.push(...Array.from(document.querySelectorAll('input[type="text"]')));
+        }
+        
+        let targetInput = null;
+        let targetButton = null;
+
+        // 2. Filter out the "Welcome Offer" input and prioritize "Claim Bonus Drop"
+        for (let i = inputs.length - 1; i >= 0; i--) {
+            const input = inputs[i];
+            
+            // Look at surrounding container text
+            const container = input.closest('form') || input.parentElement?.parentElement?.parentElement;
+            const containerText = container ? container.innerText || "" : "";
+            
+            // If the container explicitly mentions Welcome Offer and NOT Bonus Drop, skip it.
+            if (containerText.includes("Welcome Offer") && !containerText.includes("Claim Bonus Drop")) {
+                continue; 
+            }
+            
+            targetInput = input;
+            
+            // Try to find the button within the EXACT same container first
+            if (container) {
+                targetButton = container.querySelector('button[type="submit"]') || 
+                               container.querySelector('button[data-testid="redeem-button"]');
+            }
+            break;
+        }
+
+        // 3. Fallbacks if strict filtering failed
+        if (!targetInput && inputs.length > 0) {
+            // Bonus drops are typically heavily nested or lower on the page than the Welcome Offer
+            targetInput = inputs[inputs.length - 1]; 
+        }
+
+        if (targetInput && !targetButton) {
+            targetButton = document.querySelector('button[type="submit"]') || 
+                           document.querySelector('button.variant-primary') ||
+                           document.querySelector('button[data-testid="redeem-button"]');
+        }
+
+        promoInput = targetInput;
+        claimButton = targetButton;
 
         if (promoInput && claimButton) {
             if (socket && socket.readyState === WebSocket.OPEN) {
@@ -176,7 +214,7 @@
             const pendingCode = sessionStorage.getItem('v-pending-code');
             if (pendingCode) {
                 sessionStorage.removeItem('v-pending-code');
-                setTimeout(() => handleClaim(pendingCode), 500); // Small delay to let React fully mount
+                setTimeout(() => handleClaim(pendingCode), 600); // 600ms delay to let React fully mount the Settings page
             }
         }
     };
@@ -185,19 +223,19 @@
         keepAwake();
         injectStyles();
         createHUD();
-        
+
         // Ensure WS_URL has the expected query parameters
         let finalUrl = WS_URL;
         if (!finalUrl.includes('?')) {
             finalUrl += '?userId=vanguard_local&type=browser';
         }
-        
+
         socket = new WebSocket(finalUrl);
 
         socket.onopen = () => {
             showSplash("SYNCHRONIZED WITH VANGUARD CLOUD");
             updateHUD('Cloud Linked', '#0ea5e9', true);
-            
+
             // Aggressive Keep-Alive to prevent background throttling
             setInterval(() => {
                 if (socket.readyState === WebSocket.OPEN) {
@@ -245,10 +283,10 @@
                 if (data.type === 'CLAIM_CODE') {
                     const code = data.code;
                     console.log(`🎯 Code Received from Vanguard Cloud: [${code}]`);
-                    
+
                     // Send receipt back to server
                     socket.send(JSON.stringify({ type: 'CLAIM_RECEIPT', code: code, timestamp: Date.now() }));
-                    
+
                     handleClaim(code);
                 }
             } catch (e) {
@@ -264,12 +302,12 @@
 
     const handleClaim = (code) => {
         if (!promoInput || !claimButton) findElements();
-        
+
         if (!promoInput || !claimButton) {
             console.log(`[Vanguard] Redeem UI not visible. Redirecting for code: ${code}`);
-            showSplash(`NAVIGATING TO REDEEM MODAL...`);
+            showSplash(`NAVIGATING TO REDEEM SETTINGS...`);
             sessionStorage.setItem('v-pending-code', code);
-            window.location.href = 'https://stake.com/?tab=offers&modal=redeemBonus';
+            window.location.href = 'https://stake.com/settings/offers?type=drop';
             return;
         }
 
@@ -277,28 +315,28 @@
         promoInput.focus();
         const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
         nativeInputValueSetter.call(promoInput, code);
-        
+
         // Stake requires both input and change events to validate
         promoInput.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
         promoInput.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
-        
+
         // Trigger blur to finalize validation state
         promoInput.blur();
-        
+
         if (typeof window._vanguard_last_code === 'function') window._vanguard_last_code(code);
-        
+
         if (AUTO_SUBMIT) {
             // Find the closest form's submit button or use the discovered generic button
             const form = promoInput.closest('form');
             const submitBtn = form ? form.querySelector('button[type="submit"]') : claimButton;
-            
+
             setTimeout(() => {
                 if (submitBtn && !submitBtn.disabled) {
                     submitBtn.click();
                 } else if (claimButton) {
                     claimButton.click();
                 }
-                
+
                 showSplash(`AUTO-CLAIMED: ${code}`);
                 updateHUD(`Claimed ${code}`, '#00e701', true);
             }, 300); // 300ms sweet-spot to guarantee Stake's validation lifecycle completes
