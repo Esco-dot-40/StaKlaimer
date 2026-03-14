@@ -52,16 +52,21 @@ if (bot) {
         const username = ctx.message.text.split(' ')[1];
         if (!username) return ctx.reply("❌ Please provide your Stake username. Example: `/setuser MyName123`", {parse_mode: 'Markdown'});
         
-        await db.registerUser(ctx.from.id, ctx.from.username || 'unknown', username);
-        await db.activateUser(ctx.from.id);
-        
-        const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
-        ctx.replyWithMarkdown(
-            `✅ *Account Linked!*\n\nStake Username: \`${username}\`\n\n` +
-            `Now, install your personalized Vanguard script to connect your browser to the network:\n` +
-            `👉 [Download Script](${baseUrl}/claimer.user.js?tgId=${ctx.from.id})\n\n` +
-            `Keep Stake.com open in your browser, and Vanguard will handle the rest!`
-        );
+        try {
+            await db.registerUser(ctx.from.id, ctx.from.username || 'unknown', username);
+            await db.activateUser(ctx.from.id);
+            
+            const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+            ctx.replyWithMarkdown(
+                `✅ *Account Linked!*\n\nStake Username: \`${username}\`\n\n` +
+                `Now, install your personalized Vanguard script to connect your browser to the network:\n` +
+                `👉 [Download Script](${baseUrl}/claimer.user.js?tgId=${ctx.from.id})\n\n` +
+                `Keep Stake.com open in your browser, and Vanguard will handle the rest!`
+            );
+        } catch (err) {
+            console.error('Error linking user:', err);
+            ctx.reply('❌ An error occurred while linking your account. Please try again.');
+        }
     });
 
     bot.command('status', async (ctx) => {
@@ -200,6 +205,7 @@ const initBot = () => {
     if (bot) {
         // Register commands with Telegram UI automatically
         bot.telegram.setMyCommands([
+            { command: 'setuser', description: 'Link your Stake account (use: /setuser username)' },
             { command: 'status', description: 'Monitor live connection & recent claims' },
             { command: 'screen', description: 'View real-time Stake browser feed' },
             { command: 'script', description: 'Get your personalized userscript link' },

@@ -72,7 +72,7 @@ module.exports = {
     init,
     registerUser: async (tgId, username, stakeUser) => {
         if (isPostgres) {
-            return pool.query('INSERT INTO users (telegram_id, username, stake_username) VALUES ($1, $2, $3) ON CONFLICT (telegram_id) DO UPDATE SET username = $2, stake_username = $3', [tgId, username, stakeUser]);
+            return pool.query('INSERT INTO users (telegram_id, username, stake_username) VALUES ($1, $2, $3) ON CONFLICT (telegram_id) DO UPDATE SET username = EXCLUDED.username, stake_username = EXCLUDED.stake_username', [tgId, username, stakeUser]);
         }
         return sqliteDb.prepare('INSERT OR REPLACE INTO users (telegram_id, username, stake_username) VALUES (?, ?, ?)').run(tgId, username, stakeUser);
     },
