@@ -18,7 +18,6 @@ const TARGET_CHANNELS = [
     'StakeAutomation',     // Request from User
     'StakecomDailyDrops',  // Request from User
     'StakeCasino',         // Request from User
-    'StakeUSA',            // Stake.US
     'StakeLimits',         // Common drop source
     'BonusCodeNetwork',    // Common drop source
     'StakeCodez',          // Common drop source
@@ -137,13 +136,22 @@ async function startScraper() {
                 channelName.toLowerCase().includes(target.toLowerCase())
             );
 
-            if (!isTarget) return;
+            // Temporarily log all incoming channels to help debug missing codes
+            // console.log(`[GramJS Debug] Received chat activity from: ${channelName}`);
 
-            console.log(`[Message Received] From ${channelName}`);
-            // console.log(`[Text] ${message.text.substring(0, 100)}...`);
-            
             // Refined Stake Code Regex (alphanumeric, 5+ chars up to 40, without strict word boundaries to avoid hyphen bugs)
             const matches = text.match(/[A-Za-z0-9_-]{5,40}/g);
+            
+            if (!isTarget) {
+                if (matches && matches.some(c => isLikelyCode(c))) {
+                    console.log(`⚠️ [Debugger] Ignored potential code in UNTRACKED channel: ${channelName} | Maybe add this to TARGET_CHANNELS?`);
+                }
+                return;
+            }
+
+            console.log(`[Message Received] From Tracking Array Match: ${channelName}`);
+            // console.log(`[Text] ${text.substring(0, 100)}...`);
+            
             if (matches) {
                 for (const code of matches) {
                     if (isLikelyCode(code)) {
