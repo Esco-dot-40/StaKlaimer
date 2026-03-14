@@ -109,6 +109,18 @@ if (bot) {
         }
     });
 
+    bot.command('script', async (ctx) => {
+        const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+        ctx.replyWithMarkdown(
+            `📦 *Your Vanguard Script*\n\n` +
+            `👉 [Download/Update Script](${baseUrl}/claimer.user.js?tgId=${ctx.from.id})\n\n` +
+            `*Steps:*\n` +
+            `1. Delete the old script from Tampermonkey.\n` +
+            `2. Click the link above to install the new one.\n` +
+            `3. Refresh Stake.com.`
+        );
+    });
+
     bot.command('test', async (ctx) => {
         const testCode = "TEST-CODE-" + Math.floor(Math.random() * 1000);
         ctx.replyWithMarkdown(`🧪 *Triggering Test Code:* \`${testCode}\`...\nCheck your Railway logs or browser console to see the injection!`);
@@ -190,6 +202,7 @@ const initBot = () => {
         bot.telegram.setMyCommands([
             { command: 'status', description: 'Monitor live connection & recent claims' },
             { command: 'screen', description: 'View real-time Stake browser feed' },
+            { command: 'script', description: 'Get your personalized userscript link' },
             { command: 'logs', description: 'View recent server console output' },
             { command: 'boot', description: 'Manually start/restart the browser engine' },
             { command: 'connect', description: 'Check engine sync status' },
