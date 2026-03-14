@@ -167,6 +167,9 @@ function isLikelyCode(str) {
     // 2. Length check (Stake codes can sometimes be as small as 5 or 6 characters)
     if (str.length < 5) return false;
 
+    // Reject bot commands or usernames starting with underscores
+    if (str.startsWith('_')) return false;
+
     // 3. Reject purely numeric strings (likely amounts or timestamps)
     if (/^\d+$/.test(str)) return false;
 

@@ -43,6 +43,11 @@ const init = async () => {
     if (isPostgres) {
         await pool.query(userTable);
         await pool.query(claimTable);
+        try {
+            await pool.query("ALTER TABLE claims ADD COLUMN status TEXT DEFAULT 'identified';");
+        } catch (err) {
+            // Column likely already exists, ignore
+        }
     } else {
         // Correctly handle SQLite autoincrement syntax
         const sqliteUserTable = userTable
@@ -55,6 +60,11 @@ const init = async () => {
 
         sqliteDb.prepare(sqliteUserTable).run();
         sqliteDb.prepare(sqliteClaimTable).run();
+        try {
+            sqliteDb.prepare("ALTER TABLE claims ADD COLUMN status TEXT DEFAULT 'identified'").run();
+        } catch (err) {
+            // Column likely already exists
+        }
     }
 };
 

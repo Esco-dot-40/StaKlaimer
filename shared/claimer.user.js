@@ -171,6 +171,13 @@
             if (socket && socket.readyState === WebSocket.OPEN) {
                 updateHUD('Synced & Ready', '#00e701', true);
             }
+            
+            // Check for pending code after a forced redirect
+            const pendingCode = sessionStorage.getItem('v-pending-code');
+            if (pendingCode) {
+                sessionStorage.removeItem('v-pending-code');
+                setTimeout(() => handleClaim(pendingCode), 500); // Small delay to let React fully mount
+            }
         }
     };
 
@@ -207,12 +214,12 @@
                     for (const node of mutation.addedNodes) {
                         if (node.nodeType === 1) {
                             const text = node.innerText || "";
-                            if (text.includes("successfully") || text.includes("redeemed") || text.includes("claimed") || text.includes("invalid") || text.includes("wager")) {
+                            if (text.includes("successfully") || text.includes("redeemed") || text.includes("claimed") || text.includes("invalid") || text.includes("wager") || text.includes("found")) {
                                 if (lastAttemptedCode) {
                                     let status = "Unknown";
                                     if (text.includes("successfully")) status = "Success";
                                     else if (text.includes("already")) status = "Already Claimed";
-                                    else if (text.includes("invalid")) status = "Invalid Code";
+                                    else if (text.includes("invalid") || text.includes("found")) status = "Invalid Code";
                                     else if (text.includes("wager") || text.includes("requirement")) status = "Wager Req Not Met";
                                     else status = text.substring(0, 30); // Capture snippet
 
@@ -256,8 +263,12 @@
 
     const handleClaim = (code) => {
         if (!promoInput || !claimButton) findElements();
-        if (!promoInput) {
-            showSplash(`CODE DETECTED: ${code}`);
+        
+        if (!promoInput || !claimButton) {
+            console.log(`[Vanguard] Redeem UI not visible. Redirecting for code: ${code}`);
+            showSplash(`NAVIGATING TO REDEEM MODAL...`);
+            sessionStorage.setItem('v-pending-code', code);
+            window.location.href = 'https://stake.com/?tab=offers&modal=redeemBonus';
             return;
         }
 
