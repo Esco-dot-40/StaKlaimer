@@ -214,13 +214,14 @@
                     for (const node of mutation.addedNodes) {
                         if (node.nodeType === 1) {
                             const text = node.innerText || "";
-                            if (text.includes("successfully") || text.includes("redeemed") || text.includes("claimed") || text.includes("invalid") || text.includes("wager") || text.includes("found")) {
+                            if (text.includes("successfully") || text.includes("redeemed") || text.includes("claimed") || text.includes("invalid") || text.includes("wager") || text.includes("found") || text.includes("error")) {
                                 if (lastAttemptedCode) {
                                     let status = "Unknown";
                                     if (text.includes("successfully")) status = "Success";
                                     else if (text.includes("already")) status = "Already Claimed";
                                     else if (text.includes("invalid") || text.includes("found")) status = "Invalid Code";
                                     else if (text.includes("wager") || text.includes("requirement")) status = "Wager Req Not Met";
+                                    else if (text.includes("error")) status = "Rate Limited / Error";
                                     else status = text.substring(0, 30); // Capture snippet
 
                                     console.log(`📊 Claim Result for [${lastAttemptedCode}]: ${status}`);
@@ -272,14 +273,19 @@
             return;
         }
 
-        promoInput.value = code;
+        // React 16+ input hack to force value recognition
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+        nativeInputValueSetter.call(promoInput, code);
         promoInput.dispatchEvent(new Event('input', { bubbles: true }));
+        
         if (typeof window._vanguard_last_code === 'function') window._vanguard_last_code(code);
         
         if (AUTO_SUBMIT) {
-            claimButton.click();
-            showSplash(`AUTO-CLAIMED: ${code}`);
-            updateHUD(`Claimed ${code}`, '#00e701', true);
+            setTimeout(() => {
+                claimButton.click();
+                showSplash(`AUTO-CLAIMED: ${code}`);
+                updateHUD(`Claimed ${code}`, '#00e701', true);
+            }, 200); // 200ms delay to let React process the input event before clicking submit
         }
     };
 
