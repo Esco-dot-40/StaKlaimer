@@ -273,19 +273,35 @@
             return;
         }
 
-        // React 16+ input hack to force value recognition
+        // Overhauled React 16+ Injection Hack
+        promoInput.focus();
         const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
         nativeInputValueSetter.call(promoInput, code);
-        promoInput.dispatchEvent(new Event('input', { bubbles: true }));
+        
+        // Stake requires both input and change events to validate
+        promoInput.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+        promoInput.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+        
+        // Trigger blur to finalize validation state
+        promoInput.blur();
         
         if (typeof window._vanguard_last_code === 'function') window._vanguard_last_code(code);
         
         if (AUTO_SUBMIT) {
+            // Find the closest form's submit button or use the discovered generic button
+            const form = promoInput.closest('form');
+            const submitBtn = form ? form.querySelector('button[type="submit"]') : claimButton;
+            
             setTimeout(() => {
-                claimButton.click();
+                if (submitBtn && !submitBtn.disabled) {
+                    submitBtn.click();
+                } else if (claimButton) {
+                    claimButton.click();
+                }
+                
                 showSplash(`AUTO-CLAIMED: ${code}`);
                 updateHUD(`Claimed ${code}`, '#00e701', true);
-            }, 200); // 200ms delay to let React process the input event before clicking submit
+            }, 300); // 300ms sweet-spot to guarantee Stake's validation lifecycle completes
         }
     };
 
