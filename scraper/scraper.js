@@ -98,17 +98,24 @@ async function startScraper() {
     // Log joined channels for verification
     try {
         const dialogs = await client.getDialogs({});
-        const joinedUsernames = dialogs.map(d => (d.entity.username || '').toLowerCase());
+        const joinedNames = dialogs.map(d => {
+            const username = (d.entity?.username || '').toLowerCase();
+            const title = (d.entity?.title || d.name || '').toLowerCase();
+            return `${username} | ${title}`;
+        });
         console.log(`📊 Joined Dialogs: ${dialogs.length}`);
         
-        const monitored = TARGET_CHANNELS.filter(t => joinedUsernames.includes(t.toLowerCase()));
+        const monitored = TARGET_CHANNELS.filter(target => 
+            joinedNames.some(name => name.includes(target.toLowerCase()))
+        );
         console.log(`📡 Monitoring ${monitored.length}/${TARGET_CHANNELS.length} Target Channels:`, monitored);
         
         if (monitored.length === 0) {
-            console.warn("⚠️ WARNING: Not joined to ANY target channels! The scraper won't see anything.");
+            console.warn("⚠️ WARNING: Not joined to ANY target channels based on Username/Title!");
+            console.warn("⚠️ If these are private channels, ensure your scraping account is actually a member.");
         }
     } catch (e) {
-        console.log("⚠️ Could not list dialogs.");
+        console.log("⚠️ Could not list dialogs.", e.message);
     }
     
     console.log("Session String (Save this to .env as TELEGRAM_SESSION to skip login next time):");
@@ -116,10 +123,11 @@ async function startScraper() {
 
     client.addEventHandler(async (event) => {
         try {
-            const message = event.message;
-            if (!message || !message.text) return;
+            const eventMsg = event.message;
+            const text = eventMsg.message || eventMsg.text;
+            if (!eventMsg || !text) return;
 
-            const chat = await message.getChat().catch(() => null);
+            const chat = await eventMsg.getChat().catch(() => null);
             if (!chat) return;
 
             const channelName = (chat.username || chat.title || 'Unknown').toString();
@@ -134,13 +142,13 @@ async function startScraper() {
             console.log(`[Message Received] From ${channelName}`);
             // console.log(`[Text] ${message.text.substring(0, 100)}...`);
             
-            // Refined Stake Code Regex (alphanumeric, usually 5+ chars up to 40)
-            const matches = message.text.match(/\b[A-Za-z0-9_-]{5,40}\b/g);
+            // Refined Stake Code Regex (alphanumeric, 5+ chars up to 40, without strict word boundaries to avoid hyphen bugs)
+            const matches = text.match(/[A-Za-z0-9_-]{5,40}/g);
             if (matches) {
                 for (const code of matches) {
                     if (isLikelyCode(code)) {
                         console.log(`🎯 Potential Code Found: [${code}]`);
-                        await sendToVanguard(code, channelName, message.id);
+                        await sendToVanguard(code, channelName, eventMsg.id);
                     }
                 }
             }
