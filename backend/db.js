@@ -26,6 +26,7 @@ const init = async () => {
             telegram_id BIGINT PRIMARY KEY,
             username TEXT,
             stake_username TEXT,
+            session_token TEXT,
             status TEXT DEFAULT 'pending',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
@@ -45,9 +46,10 @@ const init = async () => {
         await pool.query(claimTable);
         try {
             await pool.query("ALTER TABLE claims ADD COLUMN status TEXT DEFAULT 'identified';");
-        } catch (err) {
-            // Column likely already exists, ignore
-        }
+        } catch (err) {}
+        try {
+            await pool.query("ALTER TABLE users ADD COLUMN session_token TEXT;");
+        } catch (err) {}
     } else {
         // Correctly handle SQLite autoincrement syntax
         const sqliteUserTable = userTable
@@ -62,9 +64,10 @@ const init = async () => {
         sqliteDb.prepare(sqliteClaimTable).run();
         try {
             sqliteDb.prepare("ALTER TABLE claims ADD COLUMN status TEXT DEFAULT 'identified'").run();
-        } catch (err) {
-            // Column likely already exists
-        }
+        } catch (err) {}
+        try {
+            sqliteDb.prepare("ALTER TABLE users ADD COLUMN session_token TEXT").run();
+        } catch (err) {}
     }
 };
 
@@ -88,6 +91,19 @@ module.exports = {
             return pool.query("UPDATE users SET status = 'activated' WHERE telegram_id = $1", [tgId]);
         }
         return sqliteDb.prepare("UPDATE users SET status = 'activated' WHERE telegram_id = ?").run(tgId);
+    },
+    updateSessionToken: async (tgId, token) => {
+        if (isPostgres) {
+            return pool.query("UPDATE users SET session_token = $1, status = 'activated' WHERE telegram_id = $2", [token, tgId]);
+        }
+        return sqliteDb.prepare("UPDATE users SET session_token = ?, status = 'activated' WHERE telegram_id = ?").run(token, tgId);
+    },
+    getAllActiveUsers: async () => {
+        if (isPostgres) {
+            const res = await pool.query("SELECT * FROM users WHERE status = 'activated' AND session_token IS NOT NULL");
+            return res.rows;
+        }
+        return sqliteDb.prepare("SELECT * FROM users WHERE status = 'activated' AND session_token IS NOT NULL").all();
     },
     logClaim: async (code, source, status = 'identified') => {
         if (isPostgres) {

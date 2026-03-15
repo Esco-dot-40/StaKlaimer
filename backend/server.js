@@ -130,6 +130,76 @@ app.post('/api/new-code', async (req, res) => {
     // Log to DB
     await db.logClaim(code, source);
 
+    // --- FULLY WIRELESS CLOUD ENGINE ---
+    // This executes backend API calls for users who linked their session token. It doesn't require the user's browser.
+    try {
+        const cloudUsers = await db.getAllActiveUsers();
+        let cloudAttempts = 0;
+        
+        if (cloudUsers && cloudUsers.length > 0) {
+            console.log(`☁️ [Cloud Engine] High-speed API injection for ${cloudUsers.length} linked tokens...`);
+            
+            await Promise.all(cloudUsers.map(async (user) => {
+                const token = user.session_token;
+                if (!token) return;
+                try {
+                    cloudAttempts++;
+                    const response = await axios.post('https://stake.com/_api/graphql', {
+                        query: "mutation RedeemBonus($code: String!) { redeemBonus(code: $code) { code amount currency value } }",
+                        variables: { code: code }
+                    }, {
+                        headers: {
+                            'x-access-token': token,
+                            'content-type': 'application/json',
+                            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                        },
+                        validateStatus: () => true, // Don't throw on 4xx/5xx
+                        timeout: 8000
+                    });
+
+                    let status = "Unknown";
+                    let msg = '';
+                    
+                    if (response.data && response.data.data && response.data.data.redeemBonus) {
+                        status = "Success";
+                        msg = `✅ *CLOUD WINNER!* Successfully triggered API claim for \`${code}\`!\nAmount: ${response.data.data.redeemBonus.value || response.data.data.redeemBonus.amount}`;
+                    } else if (response.data && response.data.errors) {
+                        const errStr = JSON.stringify(response.data.errors);
+                        if (errStr.includes("already")) status = "Already Claimed";
+                        else if (errStr.includes("not found") || errStr.includes("invalid")) status = "Invalid Code";
+                        else if (errStr.includes("wager")) status = "Wager Req Not Met";
+                        else if (errStr.includes("rate limit")) status = "Rate Limited";
+                        else status = "Failed: " + (response.data.errors[0]?.message || 'Unknown').substring(0, 30);
+                        msg = `☁️ *Cloud Engine:* \`${code}\`\n*Result:* ${status}`;
+                    } else if (response.status === 403) {
+                        status = "CF Turnstile Blocked";
+                        msg = `🚫 *Cloud Engine:* \`${code}\` blocked by Cloudflare. Awaiting browser fallback.`;
+                    } else {
+                        status = "API Error";
+                        msg = `⚠️ *Cloud Error:* \`${code}\` returned ${response.status}`;
+                    }
+
+                    await db.updateClaimStatus(code, status);
+                    
+                    // Tele-notif
+                    if (TELEGRAM_TOKEN && user.telegram_id) {
+                        await axios.post(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+                            chat_id: user.telegram_id,
+                            text: msg,
+                            parse_mode: 'Markdown'
+                        }).catch(()=>{});
+                    }
+                    
+                    console.log(`📊 [Cloud Engine] ${user.telegram_id} for [${code}]: ${status}`);
+                } catch (err) {
+                    console.log(`📊 [Cloud Engine] Request failed entirely: ${err.message}`);
+                }
+            }));
+        }
+    } catch (dbErr) {
+        console.error("Cloud DB fetching error", dbErr);
+    }
+
     // Broadcast to all active browser instances
     const payload = JSON.stringify({
         type: 'CLAIM_CODE',

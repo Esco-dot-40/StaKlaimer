@@ -42,9 +42,11 @@ if (bot) {
     bot.start(async (ctx) => {
         ctx.replyWithMarkdown(
             "👋 *Welcome to Vanguard Stealth Claimer*\n\n" +
-            "I automatically claim Stake bonus codes for you, milliseconds after they drop.\n\n" +
-            "To get started, please link your Stake account by replying with:\n" +
-            "`/setuser YourStakeUsername`"
+            "I automatically claim Stake bonus codes for you, milliseconds after they drop. This runs 100% in the cloud, so your PC can be off.\n\n" +
+            "To get started, link your account by entering:\n" +
+            "`/setuser YourStakeUsername`\n" +
+            "Followed by:\n" +
+            "`/settoken YourStakeSessionToken`"
         );
     });
 
@@ -59,14 +61,41 @@ if (bot) {
             const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
             ctx.replyWithMarkdown(
                 `✅ *Account Linked!*\n\nStake Username: \`${username}\`\n\n` +
-                `Now, install your personalized Vanguard script to connect your browser to the network:\n` +
-                `👉 [Download Script](${baseUrl}/claimer.user.js?tgId=${ctx.from.id})\n\n` +
-                `Keep Stake.com open in your browser, and Vanguard will handle the rest!`
+                `*Next Step (Required for Wireless Cloud Claiming):*\n` +
+                `You must provide your active Stake Session Token so Vanguard can claim on your behalf.\n\n` +
+                `Type: \`/settoken YourSessionTokenHere\`\n\n` +
+                `Not sure how to get your token? Type \`/guide\` for instructions.`
             );
         } catch (err) {
             console.error('Error linking user:', err);
             ctx.reply('❌ An error occurred while linking your account. Please try again.');
         }
+    });
+
+    bot.command('settoken', async (ctx) => {
+        const tokenVal = ctx.message.text.split(' ')[1];
+        if (!tokenVal) return ctx.reply("❌ Please provide your Stake session token.\nExample: `/settoken eyejabc1...`", {parse_mode: 'Markdown'});
+        
+        try {
+            await db.updateSessionToken(ctx.from.id, tokenVal);
+            ctx.replyWithMarkdown("✅ *Cloud Identity Synchronized!*\n\nYour session token is securely stored. Vanguard will now automatically claim all dropping codes directly to your account via the cloud API.\n\nYou do *NOT* need to keep a browser open anymore.");
+        } catch (err) {
+            console.error('Error linking token:', err);
+            ctx.reply('❌ An error occurred while saving your token.');
+        }
+    });
+
+    bot.command('guide', (ctx) => {
+        ctx.replyWithMarkdown(
+            "📖 *How to get your Session Token:*\n\n" +
+            "1. Open Stake.com and Log In.\n" +
+            "2. Press `F12` to open Developer Tools.\n" +
+            "3. Go to `Application` (or `Storage` in Firefox).\n" +
+            "4. Expand `Local Storage` and click on `https://stake.com`.\n" +
+            "5. Find the Key named `session`.\n" +
+            "6. Copy its Value (it's a long string).\n" +
+            "7. Send it here using: `/settoken YOUR_LONG_STRING_HERE`"
+        );
     });
 
     bot.command('status', async (ctx) => {
@@ -206,12 +235,13 @@ const initBot = () => {
         // Register commands with Telegram UI automatically
         bot.telegram.setMyCommands([
             { command: 'setuser', description: 'Link your Stake account (use: /setuser username)' },
+            { command: 'settoken', description: 'Add your session token for wireless claiming' },
+            { command: 'guide', description: 'Learn how to get your session token' },
             { command: 'status', description: 'Monitor live connection & recent claims' },
             { command: 'screen', description: 'View real-time Stake browser feed' },
             { command: 'script', description: 'Get your personalized userscript link' },
             { command: 'logs', description: 'View recent server console output' },
             { command: 'boot', description: 'Manually start/restart the browser engine' },
-            { command: 'connect', description: 'Check engine sync status' },
             { command: 'test', description: 'Simulate a code drop to verify system' },
             { command: 'ping', description: 'Check bot heartbeat' }
         ]);
