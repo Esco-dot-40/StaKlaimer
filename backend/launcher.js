@@ -4,11 +4,26 @@ const stealth = require('puppeteer-extra-plugin-stealth')();
 const path = require('path');
 const fs = require('fs');
 const state = require('./state');
+const axios = require('axios');
 
 let activePage = null;
+let socialPages = [];
+
+// Helper to filter likely codes
+function isLikelyCode(str) {
+    const blacklist = ['PLATFORM', 'ALREADY', 'CLAIMED', 'DROPPING', 'MULTIPLE', 'STAKE', 'BONUS', 'WELCOME', 'SUPPORT', 'MESSAGE', 'CHANNEL', 'RELOAD', 'ADDRESS', 'NETWORK', 'DEPOSIT', 'WITHDRAW', 'BALANCE', 'ACCOUNT', 'OFFERS', 'REDEEM', 'SETTINGS', 'ACTIVE', 'VANGUARD', 'STEALTH', 'BROWSER', 'INJECT', 'CAPTCHA', 'ENGINE', 'ONLINE', 'MONITOR', 'CONNECTED', 'DISCONNECTED', 'SYCHRONIZED', 'POTENTIAL', 'FOUND', 'HTTP', 'HTTPS'];
+    const upperStr = str.toUpperCase();
+    if (blacklist.some(word => upperStr.includes(word) && upperStr.length === word.length)) return false;
+    if (str.length < 5) return false;
+    if (str.startsWith('_')) return false;
+    if (/^\d+$/.test(str)) return false;
+    if (/^[a-z]+$/.test(str) && str.length < 10) return false;
+    if (str.toLowerCase().startsWith('http')) return false;
+    return true;
+}
 
 async function launchApp() {
-    const isHeadless = process.env.HEADLESS !== 'false';
+    const isHeadless = process.env.HEADLESS === 'true'; // Default to visible (headed) for EXE mode
     const isRailway = !!process.env.RAILWAY_ENVIRONMENT || !!process.env.RAILWAY_STATIC_URL || !!process.env.PORT;
     
     // Captcha Overrides
@@ -38,7 +53,8 @@ async function launchApp() {
                 '--disable-blink-features=AutomationControlled',
                 '--disable-background-timer-throttling',
                 '--disable-backgrounding-occluded-windows',
-                '--disable-renderer-backgrounding'
+                '--disable-renderer-backgrounding',
+                '--mute-audio'
             ]
         });
 
@@ -92,6 +108,88 @@ async function launchApp() {
 
         state.setEngineActive(true);
         console.log('🛡️ [Engine] ONLINE & MONITORING');
+
+        // --- SOCIAL SCRAPERS (X, Kick) in visible tabs ---
+        await browser.exposeFunction('notifyVanguardCode', async (code, source) => {
+            if (isLikelyCode(code)) {
+                console.log(`🎯 [Social Scraper - ${source}] Found Code: [${code}]`);
+                try {
+                    await axios.post(`http://localhost:${PORT}/api/new-code`, {
+                        code: code,
+                        source: source,
+                        type: 'auto-scrape'
+                    });
+                } catch (e) {
+                    // Ignore sending errors silently
+                }
+            }
+        });
+
+        console.log(`📡 [Engine] Booting Social Monitoring Tabs (Kick, X)...`);
+
+        // 1. Monitor Kick Chat (Example: xQc or Stake official if they had one)
+        try {
+            const kickPage = await browser.newPage();
+            socialPages.push(kickPage);
+            await kickPage.goto('https://kick.com/xqc', { waitUntil: 'domcontentloaded', timeout: 60000 });
+            console.log('💬 [Social] Kick chat opened. Awaiting codes...');
+            
+            await kickPage.evaluate(() => {
+                // Poll for chat container and observe
+                setInterval(() => {
+                    if (window.vanguardKickObserverStarted) return;
+                    const chatEl = document.querySelector('#chatroom');
+                    if (!chatEl) return;
+                    
+                    window.vanguardKickObserverStarted = true;
+                    console.log('Vanguard Kick Observer started');
+                    const observer = new MutationObserver((mutations) => {
+                        for (let m of mutations) {
+                            for (let node of m.addedNodes) {
+                                if (node.innerText) {
+                                    const text = node.innerText;
+                                    const codes = text.match(/[A-Za-z0-9_-]{5,40}/g);
+                                    if (codes) codes.forEach(c => window.notifyVanguardCode(c, 'Kick Chat'));
+                                }
+                            }
+                        }
+                    });
+                    observer.observe(chatEl, { childList: true, subtree: true });
+                }, 3000);
+            });
+        } catch (e) {
+            console.log('⚠️ [Social] Kick monitoring startup warned:', e.message);
+        }
+
+        // 2. Monitor X (Twitter)
+        try {
+            const twitterPage = await browser.newPage();
+            socialPages.push(twitterPage);
+            // using nitter logic or generic twitter search
+            await twitterPage.goto('https://nitter.net/search?f=tweets&q=stake+bonus+code', { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(async () => {
+                await twitterPage.goto('https://x.com/search?q=stake+bonus+code&f=live'); // fallback if Nitter fails
+            });
+            console.log('🐦 [Social] X (Twitter) search opened. Awaiting codes...');
+
+            await twitterPage.evaluate(() => {
+                // Reload page every 30 seconds to fetch new tweets
+                setInterval(() => {
+                    window.location.reload();
+                }, 30000);
+
+                // Initial run + observe
+                setInterval(() => {
+                    const textContent = document.body.innerText;
+                    const codes = textContent.match(/[A-Za-z0-9_-]{5,40}/g);
+                    if (codes) codes.forEach(c => window.notifyVanguardCode(c, 'X / Twitter'));
+                }, 15000);
+            });
+        } catch (e) {
+            console.log('⚠️ [Social] X monitoring startup warned:', e.message);
+        }
+
+        // Return focus to the main stake tab
+        await page.bringToFront();
 
     } catch (err) {
         state.setEngineActive(false);
