@@ -11,7 +11,7 @@ let socialPages = [];
 
 // Helper to filter likely codes
 function isLikelyCode(str) {
-    const blacklist = ['PLATFORM', 'ALREADY', 'CLAIMED', 'DROPPING', 'MULTIPLE', 'STAKE', 'BONUS', 'WELCOME', 'SUPPORT', 'MESSAGE', 'CHANNEL', 'RELOAD', 'ADDRESS', 'NETWORK', 'DEPOSIT', 'WITHDRAW', 'BALANCE', 'ACCOUNT', 'OFFERS', 'REDEEM', 'SETTINGS', 'ACTIVE', 'VANGUARD', 'STEALTH', 'BROWSER', 'INJECT', 'CAPTCHA', 'ENGINE', 'ONLINE', 'MONITOR', 'CONNECTED', 'DISCONNECTED', 'SYCHRONIZED', 'POTENTIAL', 'FOUND', 'HTTP', 'HTTPS'];
+    const blacklist = ['PLATFORM', 'ALREADY', 'CLAIMED', 'DROPPING', 'MULTIPLE', 'STAKE', 'BONUS', 'WELCOME', 'SUPPORT', 'MESSAGE', 'CHANNEL', 'RELOAD', 'ADDRESS', 'NETWORK', 'DEPOSIT', 'WITHDRAW', 'BALANCE', 'ACCOUNT', 'OFFERS', 'REDEEM', 'SETTINGS', 'ACTIVE', 'VANGUARD', 'STEALTH', 'BROWSER', 'INJECT', 'CAPTCHA', 'ENGINE', 'ONLINE', 'MONITOR', 'CONNECTED', 'DISCONNECTED', 'SYCHRONIZED', 'POTENTIAL', 'FOUND', 'HTTP', 'HTTPS', 'REGISTER', 'VIDEOS', 'COMMENT', 'BETID', 'TIMEOUT', 'FAILED', 'ENABLE', 'AMOUNT', 'CORRECT', 'UPDATE', 'REQUEST', 'THREAD', 'REVIEWS', 'WINNER', 'PREVIEW'];
     const upperStr = str.toUpperCase();
     if (blacklist.some(word => upperStr.includes(word) && upperStr.length === word.length)) return false;
     if (str.length < 5) return false;

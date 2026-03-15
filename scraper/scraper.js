@@ -174,7 +174,9 @@ function isLikelyCode(str) {
         'ADDRESS', 'NETWORK', 'DEPOSIT', 'WITHDRAW', 'BALANCE', 'ACCOUNT',
         'OFFERS', 'REDEEM', 'SETTINGS', 'ACTIVE', 'VANGUARD', 'STEALTH',
         'BROWSER', 'INJECT', 'CAPTCHA', 'ENGINE', 'ONLINE', 'MONITOR',
-        'CONNECTED', 'DISCONNECTED', 'SYCHRONIZED', 'POTENTIAL', 'FOUND'
+        'CONNECTED', 'DISCONNECTED', 'SYCHRONIZED', 'POTENTIAL', 'FOUND',
+        'REGISTER', 'VIDEOS', 'COMMENT', 'BETID', 'TIMEOUT', 'FAILED', 'ENABLE', 
+        'AMOUNT', 'CORRECT', 'UPDATE', 'REQUEST', 'THREAD', 'REVIEWS', 'WINNER', 'PREVIEW'
     ];
     
     const upperStr = str.toUpperCase();
