@@ -232,19 +232,22 @@ if (bot) {
 
 const initBot = () => {
     if (bot) {
-        // Register commands with Telegram UI automatically
-        bot.telegram.setMyCommands([
-            { command: 'setuser', description: 'Link your Stake account (use: /setuser username)' },
-            { command: 'settoken', description: 'Add your session token for wireless claiming' },
-            { command: 'guide', description: 'Learn how to get your session token' },
-            { command: 'status', description: 'Monitor live connection & recent claims' },
-            { command: 'screen', description: 'View real-time Stake browser feed' },
-            { command: 'script', description: 'Get your personalized userscript link' },
-            { command: 'logs', description: 'View recent server console output' },
-            { command: 'boot', description: 'Manually start/restart the browser engine' },
-            { command: 'test', description: 'Simulate a code drop to verify system' },
-            { command: 'ping', description: 'Check bot heartbeat' }
-        ]);
+        try {
+            bot.telegram.setMyCommands([
+                { command: 'setuser', description: 'Link your Stake account (use: /setuser username)' },
+                { command: 'settoken', description: 'Add your session token for wireless claiming' },
+                { command: 'guide', description: 'Learn how to get your session token' },
+                { command: 'status', description: 'Monitor live connection & recent claims' },
+                { command: 'screen', description: 'View real-time Stake browser feed' },
+                { command: 'script', description: 'Get your personalized userscript link' },
+                { command: 'logs', description: 'View recent server console output' },
+                { command: 'boot', description: 'Manually start/restart the browser engine' },
+                { command: 'test', description: 'Simulate a code drop to verify system' },
+                { command: 'ping', description: 'Check bot heartbeat' }
+            ]);
+        } catch (setCmdErr) {
+            console.warn('⚠️ Warning: Failed to populate bot commands list on Telegram UI:', setCmdErr.message);
+        }
 
         bot.launch().catch(err => {
             if (err.description && err.description.includes('Conflict')) {
