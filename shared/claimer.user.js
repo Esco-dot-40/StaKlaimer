@@ -14,6 +14,8 @@
 (function () {
     'use strict';
 
+    if (window.self !== window.top) return; // Prevent loading inside iframes
+
     const WS_URL = window.PHANTOM_INTERNAL_SERVER || 'ws://staklaimer-production.up.railway.app?userId=vanguard_user&type=browser';
     const AUTO_SUBMIT = true;
 
