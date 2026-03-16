@@ -228,7 +228,18 @@
             const pendingCode = sessionStorage.getItem('v-pending-code');
             if (pendingCode) {
                 sessionStorage.removeItem('v-pending-code');
-                setTimeout(() => handleClaim(pendingCode), 600); // 600ms delay to let React fully mount the Settings page
+                console.log(`[Vanguard] Claiming pending code from session: ${pendingCode}`);
+                
+                const pollInput = setInterval(() => {
+                    findElements();
+                    if (promoInput && claimButton) {
+                        clearInterval(pollInput);
+                        handleClaim(pendingCode);
+                    }
+                }, 500);
+                
+                // Timeout polling after 15 seconds to avoid memory leaks
+                setTimeout(() => clearInterval(pollInput), 15000);
             }
         }
     };
