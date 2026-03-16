@@ -84,10 +84,10 @@ async function launchApp() {
         const targetUrl = 'https://stake.com/?tab=offers&modal=redeemBonus';
         console.log(`📡 [Engine] Navigating to Stake...`);
         
-        await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 120000 });
+        await page.goto(targetUrl, { waitUntil: 'commit', timeout: 120000 });
         
-        // --- FREE AUDIO-SOLVER BRIDGE ---
-        console.log('🤖 [Engine] Captcha Sentry Armed (Free Audio Mode)');
+        // --- TURNSTILE BYPASS ---
+        console.log('🤖 [Engine] Captcha Sentry Armed');
         
         // This is a 'wait-and-solve' loop that looks for challenges
         setInterval(async () => {
@@ -98,13 +98,37 @@ async function launchApp() {
                 });
 
                 if (hasCaptcha) {
-                    console.log('🧩 [Engine] Challenge Detected. Attempting Free Bypass...');
-                    // In a headless environment, we focus on stealth and multi-layered 'Human' behavior
-                    // to trigger the 'Auto-Verify' on Cloudflare/Turnstile.
-                    await page.mouse.move(Math.random() * 100, Math.random() * 100);
+                    console.log('🧩 [Engine] Challenge Detected. Attempting Bypass...');
+                    
+                    // Find Cloudflare Turnstile frame
+                    const cfFrame = page.frames().find(f => f.url().includes('challenges.cloudflare.com'));
+                    if (cfFrame) {
+                        try {
+                            // Try finding the checkbox element inside the frame
+                            const checkbox = await cfFrame.$('input[type="checkbox"], #checkbox, .cb-checkbox');
+                            if (checkbox) {
+                                console.log('✅ [Engine] Found Turnstile Checkbox. Clicking...');
+                                await checkbox.click({ force: true });
+                            } else {
+                                // Fallback: click coordinates
+                                const frameElement = await cfFrame.frameElement();
+                                const box = await frameElement.boundingBox();
+                                if (box) {
+                                    console.log('✅ [Engine] Clicking coordinates for Turnstile frame...');
+                                    // Click closer to the left side where the checkbox usually is.
+                                    await page.mouse.click(box.x + 30, box.y + box.height / 2);
+                                }
+                            }
+                        } catch (err) {
+                            console.log(`⚠️ [Engine] Frame click failed: ${err.message}`);
+                        }
+                    } else {
+                        // General mouse movement as fallback
+                        await page.mouse.move(Math.random() * 100, Math.random() * 100);
+                    }
                 }
             } catch (e) {}
-        }, 10000);
+        }, 5000);
 
         state.setEngineActive(true);
         console.log('🛡️ [Engine] ONLINE & MONITORING');

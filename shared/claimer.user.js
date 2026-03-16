@@ -55,11 +55,16 @@
                 overflow: hidden; border-top: 2px solid #00e701;
             }
             .v-header { 
-                padding: 18px 20px; background: rgba(255, 255, 255, 0.02);
+                padding: 12px 18px; background: rgba(255, 255, 255, 0.02);
                 border-bottom: 1px solid rgba(255, 255, 255, 0.05);
                 display: flex; align-items: center; justify-content: space-between;
+                cursor: pointer; user-select: none;
             }
-            .v-logo { font-family: 'Orbitron', sans-serif; font-size: 14px; color: #00e701; letter-spacing: 2px; font-weight: 700; }
+            .v-logo { font-family: 'Orbitron', sans-serif; font-size: 13px; color: #00e701; letter-spacing: 2px; font-weight: 700; }
+            .v-toggle-btn { font-size: 14px; color: #64748b; transition: transform 0.3s; }
+            .v-dashboard.collapsed .v-content { display: none; }
+            .v-dashboard.collapsed { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+            .v-dashboard.collapsed .v-toggle-btn { transform: rotate(-180deg); }
             .v-content { padding: 15px 20px; display: flex; flex-direction: column; gap: 15px; }
             .v-metric { display: flex; align-items: center; gap: 12px; }
             .v-metric-label { font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
@@ -112,9 +117,12 @@
         hudElement = document.createElement('div');
         hudElement.className = 'v-dashboard';
         hudElement.innerHTML = `
-            <div class="v-header">
+            <div class="v-header" id="v-header-toggle">
                 <span class="v-logo">VANGUARD OS</span>
-                <div id="v-main-dot" class="v-status-dot" style="color: #64748b; background: #64748b;"></div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div id="v-main-dot" class="v-status-dot" style="color: #64748b; background: #64748b;"></div>
+                    <span class="v-toggle-btn">▼</span>
+                </div>
             </div>
             <div class="v-content">
                 <div class="v-metric">
@@ -142,6 +150,10 @@
             </div>
         `;
         document.body.appendChild(hudElement);
+
+        document.getElementById('v-header-toggle').addEventListener('click', () => {
+            hudElement.classList.toggle('collapsed');
+        });
     };
 
     const updateHUD = (text, color, active = false) => {

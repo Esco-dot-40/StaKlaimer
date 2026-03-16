@@ -24,7 +24,15 @@ async function main() {
 
         // 4. Start Scraper
         if (typeof scraperInit === 'function') {
-            scraperInit();
+            scraperInit().catch(err => {
+                console.error('\n❌ [Telegram Scraper] CRITICAL CONNECTION FAILURE:');
+                if (err.message?.includes('AUTH_KEY_DUPLICATED')) {
+                    console.error('👉 REASON: Multiple triggers detected! Shut down your other cloud bot (Railway/Render) using the same session token.');
+                } else {
+                    console.error('👉 ERROR:', err.message);
+                }
+                console.error('------------------------------------------------');
+            });
         }
 
         // 5. Start Automated Phantom Browser (The "Headless" Claimer)
