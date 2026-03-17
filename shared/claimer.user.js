@@ -249,79 +249,95 @@
         injectStyles();
         createHUD();
 
-        // Ensure WS_URL has the expected query parameters
-        let finalUrl = WS_URL;
-        if (!finalUrl.includes('?')) {
-            finalUrl += '?userId=vanguard_local&type=browser';
-        }
+        updateHUD('Awaiting Login...', '#f59e0b');
 
-        socket = new WebSocket(finalUrl);
+        // --- LOGIN DETECTOR ---
+        // Wait until the user is logged in to Stake before connecting to Vanguard Cloud
+        const checkLogin = setInterval(() => {
+            const isLoggedIn = document.querySelector('button[data-testid="sign-in"], .auth-modal') === null && 
+                               (document.querySelector('div[class*="balance"]') !== null || document.cookie.includes('session='));
+            
+            if (isLoggedIn) {
+                clearInterval(checkLogin);
+                proceedToConnect();
+            }
+        }, 1500);
 
-        socket.onopen = () => {
-            showSplash("SYNCHRONIZED WITH VANGUARD CLOUD");
-            updateHUD('Cloud Linked', '#0ea5e9', true);
+        const proceedToConnect = () => {
+            // Ensure WS_URL has the expected query parameters
+            let finalUrl = WS_URL;
+            if (!finalUrl.includes('?')) {
+                finalUrl += '?userId=vanguard_local&type=browser';
+            }
 
-            // Aggressive Keep-Alive to prevent background throttling
-            setInterval(() => {
-                if (socket.readyState === WebSocket.OPEN) {
-                    socket.send(JSON.stringify({ type: 'STATUS_UPDATE', status: 'AWAKE', timestamp: Date.now() }));
-                }
-            }, 15000);
+            socket = new WebSocket(finalUrl);
 
-            setInterval(findElements, 2000);
+            socket.onopen = () => {
+                showSplash("SYNCHRONIZED WITH VANGUARD CLOUD");
+                updateHUD('Synced & Ready', '#00e701', true);
 
-            // --- RESULT TRACKER ---
-            let lastAttemptedCode = null;
-            const observer = new MutationObserver((mutations) => {
-                for (const mutation of mutations) {
-                    for (const node of mutation.addedNodes) {
-                        if (node.nodeType === 1) {
-                            const text = node.innerText || "";
-                            if (text.includes("successfully") || text.includes("redeemed") || text.includes("claimed") || text.includes("invalid") || text.includes("wager") || text.includes("found") || text.includes("error")) {
-                                if (lastAttemptedCode) {
-                                    let status = "Unknown";
-                                    if (text.includes("successfully")) status = "Success";
-                                    else if (text.includes("already")) status = "Already Claimed";
-                                    else if (text.includes("invalid") || text.includes("found")) status = "Invalid Code";
-                                    else if (text.includes("wager") || text.includes("requirement")) status = "Wager Req Not Met";
-                                    else if (text.includes("error")) status = "Rate Limited / Error";
-                                    else status = text.substring(0, 30); // Capture snippet
+                // Aggressive Keep-Alive to prevent background throttling
+                setInterval(() => {
+                    if (socket.readyState === WebSocket.OPEN) {
+                        socket.send(JSON.stringify({ type: 'STATUS_UPDATE', status: 'AWAKE', timestamp: Date.now() }));
+                    }
+                }, 15000);
 
-                                    console.log(`📊 Claim Result for [${lastAttemptedCode}]: ${status}`);
-                                    socket.send(JSON.stringify({ type: 'CLAIM_RESULT', code: lastAttemptedCode, status: status, timestamp: Date.now() }));
-                                    updateHistory(lastAttemptedCode, status);
-                                    lastAttemptedCode = null; // Clear to prevent double logging
+                setInterval(findElements, 2000);
+
+                // --- RESULT TRACKER ---
+                let lastAttemptedCode = null;
+                const observer = new MutationObserver((mutations) => {
+                    for (const mutation of mutations) {
+                        for (const node of mutation.addedNodes) {
+                            if (node.nodeType === 1) {
+                                const text = node.innerText || "";
+                                if (text.includes("successfully") || text.includes("redeemed") || text.includes("claimed") || text.includes("invalid") || text.includes("wager") || text.includes("found") || text.includes("error")) {
+                                    if (lastAttemptedCode) {
+                                        let status = "Unknown";
+                                        if (text.includes("successfully")) status = "Success";
+                                        else if (text.includes("already")) status = "Already Claimed";
+                                        else if (text.includes("invalid") || text.includes("found")) status = "Invalid Code";
+                                        else if (text.includes("wager") || text.includes("requirement")) status = "Wager Req Not Met";
+                                        else if (text.includes("error")) status = "Rate Limited / Error";
+                                        else status = text.substring(0, 30); // Capture snippet
+
+                                        console.log(`📊 Claim Result for [${lastAttemptedCode}]: ${status}`);
+                                        socket.send(JSON.stringify({ type: 'CLAIM_RESULT', code: lastAttemptedCode, status: status, timestamp: Date.now() }));
+                                        updateHistory(lastAttemptedCode, status);
+                                        lastAttemptedCode = null; // Clear to prevent double logging
+                                    }
                                 }
                             }
                         }
                     }
+                });
+                observer.observe(document.body, { childList: true, subtree: true });
+
+                window._vanguard_last_code = (c) => { lastAttemptedCode = c; };
+            };
+
+            socket.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'CLAIM_CODE') {
+                        const code = data.code;
+                        console.log(`🎯 Code Received from Vanguard Cloud: [${code}]`);
+
+                        // Send receipt back to server
+                        socket.send(JSON.stringify({ type: 'CLAIM_RECEIPT', code: code, timestamp: Date.now() }));
+
+                        handleClaim(code);
+                    }
+                } catch (e) {
+                    console.error("Error parsing WebSocket message:", e);
                 }
-            });
-            observer.observe(document.body, { childList: true, subtree: true });
+            };
 
-            window._vanguard_last_code = (c) => { lastAttemptedCode = c; };
-        };
-
-        socket.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.type === 'CLAIM_CODE') {
-                    const code = data.code;
-                    console.log(`🎯 Code Received from Vanguard Cloud: [${code}]`);
-
-                    // Send receipt back to server
-                    socket.send(JSON.stringify({ type: 'CLAIM_RECEIPT', code: code, timestamp: Date.now() }));
-
-                    handleClaim(code);
-                }
-            } catch (e) {
-                console.error("Error parsing WebSocket message:", e);
-            }
-        };
-
-        socket.onclose = () => {
-            updateHUD('Lost Connection', '#ef4444');
-            setTimeout(connect, 5000);
+            socket.onclose = () => {
+                updateHUD('Lost Connection', '#ef4444');
+                setTimeout(proceedToConnect, 5000);
+            };
         };
     };
 

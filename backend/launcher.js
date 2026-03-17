@@ -54,6 +54,7 @@ async function launchApp() {
                 '--disable-background-timer-throttling',
                 '--disable-backgrounding-occluded-windows',
                 '--disable-renderer-backgrounding',
+                '--allow-running-insecure-content',
                 '--mute-audio'
             ]
         });
@@ -82,9 +83,11 @@ async function launchApp() {
         });
 
         const targetUrl = 'https://stake.com/?tab=offers&modal=redeemBonus';
-        console.log(`📡 [Engine] Navigating to Stake...`);
+        console.log(`🧭 [Engine] WAITING: Please navigate to Stake.com manually in your opened browser window.`);
+        console.log(`💡 [Engine] Tip: Solve the Captcha & Log In. Vanguard will automatically inject on load!`);
         
-        await page.goto(targetUrl, { waitUntil: 'commit', timeout: 120000 });
+        // Remove automatic navigation to avoid trigger caps
+        // await page.goto(targetUrl, { waitUntil: 'commit', timeout: 120000 });
         
         // --- TURNSTILE BYPASS ---
         console.log('🤖 [Engine] Captcha Sentry Armed');
