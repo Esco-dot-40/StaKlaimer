@@ -25,6 +25,12 @@ pause >nul
 
 echo [2] Initializing Cloud Claimer Hub...
 cd /d "%~dp0"
+
+echo.
+echo 🚀 [Vanguard] Launching Secure Chrome Overlay (Port 9222)...
+echo 💡 [Vanguard] Solve any Captchas and Log In on this window!
+start "" chrome.exe --remote-debugging-port=9222 --user-data-dir="%~dp0\vanguard_chrome_profile" "https://stake.com/?tab=offers&modal=redeemBonus"
+
 node index.js
 
 echo.
