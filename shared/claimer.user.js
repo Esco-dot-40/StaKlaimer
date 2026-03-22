@@ -336,6 +336,7 @@
 
             socket.onclose = () => {
                 updateHUD('Lost Connection', '#ef4444');
+                socket = null;
                 setTimeout(proceedToConnect, 5000);
             };
         };

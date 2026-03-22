@@ -66,6 +66,7 @@ wss.on('connection', (ws, req) => {
     }
 
     ws.on('close', () => {
+        clearInterval(heartbeat);
         if (type === 'browser') {
             clients.delete(userId);
         }
@@ -75,7 +76,13 @@ wss.on('connection', (ws, req) => {
     // Send a heartbeat to keep connection alive
     const heartbeat = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: 'HEARTBEAT' }));
+            try {
+                ws.send(JSON.stringify({ type: 'HEARTBEAT' }));
+            } catch (e) {
+                clearInterval(heartbeat);
+            }
+        } else if (ws.readyState !== WebSocket.CONNECTING) {
+            clearInterval(heartbeat);
         }
     }, 30000);
 
@@ -115,86 +122,146 @@ wss.on('connection', (ws, req) => {
         }
     });
 
-    ws.on('close', () => clearInterval(heartbeat));
+
 });
 
+// --- HELPER WRAPPERS (CLAUDE OPTIMIZERS) ---
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const tokenCooldowns = new Map();
+
+function isTokenCoolingDown(token) {
+    const until = tokenCooldowns.get(token);
+    return until && Date.now() < until;
+}
+
+function setTokenCooldown(token, ms = 15000) {
+    tokenCooldowns.set(token, Date.now() + ms);
+}
+
+async function graphqlWithRetry(token, code, maxRetries = 3) {
+    let attempt = 0;
+    let delay = 500;
+
+    while (attempt < maxRetries) {
+        if (isTokenCoolingDown(token)) {
+            return { status: 403, data: { errors: [{ message: "CF/Slowdown Cooldown Active" }] } };
+        }
+
+        try {
+            const response = await axios.post(
+                'https://stake.com/_api/graphql',
+                {
+                    query: `mutation RedeemBonus($code: String!) {
+                        redeemBonus(code: $code) { code amount currency value }
+                    }`,
+                    variables: { code: code }
+                },
+                {
+                    headers: {
+                        'x-access-token': token,
+                        'content-type': 'application/json',
+                        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0'
+                    },
+                    validateStatus: () => true,
+                    timeout: 8000
+                }
+            );
+
+            if (response.status === 429 || response.status === 403) {
+                if (response.status === 403) setTokenCooldown(token, 15000);
+                const retryAfter = parseInt(response.headers['retry-after'] || '0') * 1000;
+                const wait = retryAfter || delay;
+                console.warn(`[GraphQL] ${response.status} on attempt ${attempt + 1}. Waiting ${wait}ms`);
+                await sleep(wait);
+                delay *= 2;
+                attempt++;
+                continue;
+            }
+
+            return response;
+        } catch (err) {
+            if (attempt === maxRetries - 1) throw err;
+            await sleep(delay);
+            delay *= 2;
+            attempt++;
+        }
+    }
+    throw new Error(`Max retries reached for code: ${code}`);
+}
+
+async function withConcurrencyLimit(tasks, limit = 3) {
+    const results = [];
+    const executing = new Set();
+    for (const task of tasks) {
+        const p = Promise.resolve().then(task).finally(() => executing.delete(p));
+        results.push(p);
+        executing.add(p);
+        if (executing.size >= limit) {
+            await Promise.race(executing);
+        }
+    }
+    return Promise.allSettled(results);
+}
+
 // --- Ingestion Endpoint ---
-// This is where your scrapers (Telegram, Kick, etc.) will POST new codes
 app.post('/api/new-code', async (req, res) => {
     const { code, source, type } = req.body;
-    
     if (!code) return res.status(400).json({ error: 'Code is required' });
 
     console.log(`🚀 New code received: [${code}] from ${source}`);
-
-    // Log to DB
     await db.logClaim(code, source);
 
-    // --- FULLY WIRELESS CLOUD ENGINE ---
-    // This executes backend API calls for users who linked their session token. It doesn't require the user's browser.
     try {
         const cloudUsers = await db.getAllActiveUsers();
-        let cloudAttempts = 0;
-        
         if (cloudUsers && cloudUsers.length > 0) {
             console.log(`☁️ [Cloud Engine] High-speed API injection for ${cloudUsers.length} linked tokens...`);
-            
-            await Promise.all(cloudUsers.map(async (user) => {
-                const token = user.session_token;
-                if (!token) return;
-                try {
-                    cloudAttempts++;
-                    const response = await axios.post('https://stake.com/_api/graphql', {
-                        query: "mutation RedeemBonus($code: String!) { redeemBonus(code: $code) { code amount currency value } }",
-                        variables: { code: code }
-                    }, {
-                        headers: {
-                            'x-access-token': token,
-                            'content-type': 'application/json',
-                            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                        },
-                        validateStatus: () => true, // Don't throw on 4xx/5xx
-                        timeout: 8000
-                    });
 
-                    let status = "Unknown";
-                    let msg = '';
-                    
-                    if (response.data && response.data.data && response.data.data.redeemBonus) {
-                        status = "Success";
-                        msg = `✅ *CLOUD WINNER!* Successfully triggered API claim for \`${code}\`!\nAmount: ${response.data.data.redeemBonus.value || response.data.data.redeemBonus.amount}`;
-                    } else if (response.data && response.data.errors) {
-                        const errStr = JSON.stringify(response.data.errors);
-                        if (errStr.includes("already")) status = "Already Claimed";
-                        else if (errStr.includes("not found") || errStr.includes("invalid")) status = "Invalid Code";
-                        else if (errStr.includes("wager")) status = "Wager Req Not Met";
-                        else if (errStr.includes("rate limit")) status = "Rate Limited";
-                        else status = "Failed: " + (response.data.errors[0]?.message || 'Unknown').substring(0, 30);
-                        msg = `☁️ *Cloud Engine:* \`${code}\`\n*Result:* ${status}`;
-                    } else if (response.status === 403) {
-                        status = "CF Turnstile Blocked";
-                        msg = `🚫 *Cloud Engine:* \`${code}\` blocked by Cloudflare. Awaiting browser fallback.`;
-                    } else {
-                        status = "API Error";
-                        msg = `⚠️ *Cloud Error:* \`${code}\` returned ${response.status}`;
-                    }
+            const tasks = cloudUsers
+                .filter(u => u.session_token)
+                .map(user => async () => {
+                    const token = user.session_token;
+                    try {
+                        const response = await graphqlWithRetry(token, code);
+                        
+                        let status = "Unknown";
+                        let msg = '';
+                        
+                        if (response.data && response.data.data && response.data.data.redeemBonus) {
+                            status = "Success";
+                            msg = `✅ *CLOUD WINNER!* Successfully triggered API claim for \`${code}\`!\nAmount: ${response.data.data.redeemBonus.value || response.data.data.redeemBonus.amount}`;
+                        } else if (response.data && response.data.errors) {
+                            const errStr = JSON.stringify(response.data.errors);
+                            if (errStr.includes("already")) status = "Already Claimed";
+                            else if (errStr.includes("not found") || errStr.includes("invalid")) status = "Invalid Code";
+                            else if (errStr.includes("wager")) status = "Wager Req Not Met";
+                            else if (errStr.includes("rate limit")) status = "Rate Limited";
+                            else status = "Failed: " + (response.data.errors[0]?.message || 'Unknown').substring(0, 30);
+                            msg = `☁️ *Cloud Engine:* \`${code}\`\n*Result:* ${status}`;
+                        } else if (response.status === 403) {
+                            status = "CF Turnstile Blocked";
+                            msg = `🚫 *Cloud Engine:* \`${code}\` blocked by Cloudflare (403). Awaiting fallback.`;
+                        } else {
+                            status = "API Error";
+                            msg = `⚠️ *Cloud Error:* \`${code}\` returned ${response.status}`;
+                        }
 
-                    await db.updateClaimStatus(code, status);
-                    
-                    // Tele-notif
-                    if (TELEGRAM_TOKEN && user.telegram_id) {
-                        await axios.post(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-                            chat_id: user.telegram_id,
-                            text: msg,
-                            parse_mode: 'Markdown'
-                        }).catch(()=>{});
+                        await db.updateClaimStatus(code, status);
+                        
+                        if (TELEGRAM_TOKEN && user.telegram_id) {
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+                                chat_id: user.telegram_id,
+                                text: msg,
+                                parse_mode: 'Markdown'
+                            }).catch(()=>{});
+                        }
+                        console.log(`📊 [Cloud Engine] ${user.telegram_id} for [${code}]: ${status}`);
+
+                    } catch (err) {
+                        console.log(`📊 [Cloud Engine] Request failed for ${user.telegram_id}: ${err.message}`);
                     }
-                    
-                    console.log(`📊 [Cloud Engine] ${user.telegram_id} for [${code}]: ${status}`);
-                } catch (err) {
-                    console.log(`📊 [Cloud Engine] Request failed entirely: ${err.message}`);
-                }
-            }));
+                });
+
+            await withConcurrencyLimit(tasks, 3);
         }
     } catch (dbErr) {
         console.error("Cloud DB fetching error", dbErr);
