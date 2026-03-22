@@ -41,25 +41,21 @@ async function launchApp() {
     try {
         console.log(`🚀 [Engine] Attempting Chromium launch...`);
         
-        const userDataDir = path.join(process.cwd(), 'user_data');
-        if (!fs.existsSync(userDataDir)) fs.mkdirSync(userDataDir);
+        console.log(`🚀 [Engine] Connecting over CDP to Local Chrome (Port 9222)...`);
+        
+        const browser = await chromium.connectOverCDP('http://localhost:9222');
+        const context = browser.contexts()[0];
+        
+        if (!context) {
+             throw new Error("No active browser context found in Connected Chrome session.");
+        }
 
-        const browser = await chromium.launchPersistentContext(userDataDir, {
-            headless: isHeadless,
-            viewport: { width: 1280, height: 720 },
-            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-            args: [
-                '--start-maximized',
-                '--disable-blink-features=AutomationControlled',
-                '--disable-background-timer-throttling',
-                '--disable-backgrounding-occluded-windows',
-                '--disable-renderer-backgrounding',
-                '--allow-running-insecure-content',
-                '--mute-audio'
-            ]
-        });
-
-        const page = browser.pages()[0] || await browser.newPage();
+        // Find an existing Stake tab, or grab the absolute first tab loaded
+        let page = context.pages().find(p => p.url().includes('stake.com'));
+        if (!page) {
+             console.log("🧭 [Engine] No Stake.com tab found. Re-routing to primary tab...");
+             page = context.pages()[0] || await context.newPage();
+        }
         activePage = page;
         
         const claimerPath = path.join(__dirname, '../shared/claimer.user.js');
@@ -76,11 +72,26 @@ async function launchApp() {
         page.on('domcontentloaded', async () => {
             console.log('💉 [Engine] Injecting Vanguard Prime UI...');
             await page.evaluate((code) => {
+                // Safety guard to avoid double injections
+                if (window.__VANGUARD_INJECTED) return; 
+                window.__VANGUARD_INJECTED = true;
                 const script = document.createElement('script');
                 script.textContent = code;
                 document.documentElement.appendChild(script);
             }, claimerCode);
         });
+
+        // Trigger immediate injection if the tab was ALREADY open before script connected
+        if (page.url().includes('stake.com')) {
+             console.log("💉 [Engine] Injecting instantly into active layout node...");
+             await page.evaluate((code) => {
+                 if (window.__VANGUARD_INJECTED) return;
+                 window.__VANGUARD_INJECTED = true;
+                 const script = document.createElement('script');
+                 script.textContent = code;
+                 document.documentElement.appendChild(script);
+             }, claimerCode).catch(()=>{});
+        }
 
         const targetUrl = 'https://stake.com/?tab=offers&modal=redeemBonus';
         console.log(`🧭 [Engine] WAITING: Please navigate to Stake.com manually in your opened browser window.`);
